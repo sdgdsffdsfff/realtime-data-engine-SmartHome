@@ -6,38 +6,29 @@
     2、 字符串类型目前size填写的是0,也请根据实际需要确定长度
  -->
  
-	<struct name="CreateRole"	id=""	desc="创建角色日志"> 
-		<entry name="iEventId"	type="ubigint"	size=""	desc="游戏事件ID"/> 
-		<entry name="iUin"	type="uint"	size=""	desc="用户QQ号"/> 
-		<entry name="dtEventTime"	type="datetime"	size=""	desc="创建角色时间"/> 
-		<entry name="vClientIp"	type="varchar"	size="0"	desc="创建角色时客户端所在ip"/> 
-		<entry name="iRoleId"	type="bigint"	size=""	desc="被创建的角色ID"/> 
-		<entry name="vRoleName"	type="varchar"	size="0"	desc="被创建的角色名"/> 
-		<entry name="iJobId"	type="int"	size=""	desc="被创建的角色职业"/> 
-		<entry name="iGender"	type="int"	size=""	desc="被创建的角色性别"/> 
+	<struct name="audio"	id="40"	desc="声音"> 
+		<entry name="SensorType"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
+		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
+		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
+		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
+		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
 	</struct>
-	<struct name="DeleteRole"	id=""	desc="删除角色日志"> 
-		<entry name="iEventId"	type="ubigint"	size=""	desc="游戏事件ID"/> 
-		<entry name="iUin"	type="uint"	size=""	desc="用户QQ号"/> 
-		<entry name="dtEventTime"	type="datetime"	size=""	desc="删除角色时间"/> 
-		<entry name="vClientIp"	type="varchar"	size="0"	desc="删除角色时客户端所在ip"/> 
-		<entry name="iRoleId"	type="bigint"	size=""	desc="被删除的角色ID"/> 
-		<entry name="vRoleName"	type="varchar"	size="0"	desc="被删除的角色名"/> 
-		<entry name="iJobId"	type="int"	size=""	desc="被删除的角色职业"/> 
-		<entry name="iRoleLevel"	type="int"	size=""	desc="被删除的角色等级"/> 
-		<entry name="iGender"	type="int"	size=""	desc="被删除的角色性别"/> 
+	<struct name="temperature"	id="50"	desc="删除角色日志"> 
+		<entry name="sensorType"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
+		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
+		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
+		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
+		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
 	</struct>
-	<struct name="ChPwd"	id=""	desc="修改角色密码日志"> 
-		<entry name="iEventId"	type="ubigint"	size=""	desc="游戏事件ID"/> 
-		<entry name="iUin"	type="uint"	size=""	desc="用户QQ号"/> 
-		<entry name="dtEventTime"	type="datetime"	size=""	desc="修改角色密码时间"/> 
-		<entry name="vClientIp"	type="varchar"	size="0"	desc="修改角色密码时客户端所在ip"/> 
-		<entry name="iRoleId"	type="int"	size=""	desc="被修改角色密码的角色ID"/> 
-		<entry name="vRoleName"	type="varchar"	size="0"	desc="被修改角色密码的角色名"/> 
-		<entry name="iJobId"	type="int"	size=""	desc="被修改角色密码的角色职业"/>
-		<entry name="iRoleLevel"	type="int"	size=""	desc="被修改角色密码的角色等级"/>
-		<entry name="vOldPasswd"	type="varchar"	size="0"	desc="修改前的角色密码"/> 
-		<entry name="vNewPasswd"	type="varchar"	size="0"	desc="修改后的角色密码"/> 
+	<struct name="ChPwd"	id="33"	desc="修改角色密码日志"> 
+		<entry name="sensorType"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
+		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
+		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
+		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
+		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
 	</struct>													
 </metalib>
 

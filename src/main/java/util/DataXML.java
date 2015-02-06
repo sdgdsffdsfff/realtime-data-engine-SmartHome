@@ -10,8 +10,15 @@ import java.util.List;
 
 public class DataXML {
 	private List<Column> columns;	
-	//private int factorID;
+	private int factorID;
 
+	
+	public int getFactorID() {
+		return factorID;
+	}
+	public void setFactorID(int factorID) {
+		this.factorID = factorID;
+	}
 	public List<Column> getColumns() {
 		return columns;
 	}
@@ -19,8 +26,8 @@ public class DataXML {
 		this.columns = columns;
 	}
 	public DataXML(List<Column> columns) {
-		super();
 		this.columns = columns;
+		this.factorID=getFactorIDFromList();
 	}
 	public DataXML() {
 	}
@@ -64,7 +71,7 @@ public class DataXML {
 		return -1;			
 	}
 	
-	public int getFactorID(){
+	public int getFactorIDFromList(){
 		int size=this.columns.size();
 		for (int i=0;i<size;i++) {
 			if(	columns.get(i).getColumnName()=="id"){
