@@ -7,28 +7,29 @@
  -->
  
 	<struct name="audio"	id="40"	desc="声音"> 
-		<entry name="SensorType"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
 		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
 		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
 		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
-		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
 		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
 	</struct>
-	<struct name="temperature"	id="50"	desc="删除角色日志"> 
-		<entry name="sensorType"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+	<struct name="AudioSpectrum"	id="50"	desc="声音频谱信息"> 
+		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
 		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
 		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
 		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
 		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
 		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="value2"	type="bigint"	size=""	desc="数据的值"/> 
 	</struct>
 	<struct name="ChPwd"	id="33"	desc="修改角色密码日志"> 
-		<entry name="sensorType"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
 		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
 		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
 		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
 		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
 		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="value2"	type="bigint"	size=""	desc="数据的值"/> 
 	</struct>													
 </metalib>
 

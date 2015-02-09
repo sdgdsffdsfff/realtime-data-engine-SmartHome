@@ -3,9 +3,8 @@ package Trigger;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Predicate;
-
-import backtype.storm.daemon.nimbus.newly_added_slots;
 import util.GeneralMethod;
+import util.SystemConfig;
 import cooxm.devicecontrol.device.Trigger;
 import cooxm.devicecontrol.device.TriggerFactor;
 import cooxm.devicecontrol.device.TriggerMap;
@@ -30,8 +29,9 @@ public class EmbededTriggerMap extends HashMap<Integer, HashMap<Integer,RunTimeT
 	public EmbededTriggerMap(TriggerMap triggerMap){
 		HashMap<Integer, RunTimeTrigger> triggerList=null;
 		for (Entry<String,Trigger>entry: triggerMap.entrySet()){
-			Trigger trigger=(Trigger) GeneralMethod.depthClone(entry.getValue());
-			RunTimeTrigger runTrigger=new RunTimeTrigger(trigger,new Date(0),0, modCount);
+			//Trigger trigger=(Trigger) GeneralMethod.depthClone(entry.getValue());
+			Trigger trigger=entry.getValue();
+			RunTimeTrigger runTrigger=new RunTimeTrigger(trigger,new Date(0),0, SystemConfig.getConf().getTriggerTimeOut());
 			final Predicate< TriggerFactor> filter=new Predicate<TriggerFactor>() {
 				@Override
 				public boolean test(TriggerFactor t) {

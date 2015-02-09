@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import cooxm.devicecontrol.socket.Message;
+
+
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
  * @version Created：Feb 5, 2015 4:11:47 PM 
@@ -33,6 +36,16 @@ public class GeneralMethod {
 	
 
 	public static void main(String[] args) {
+		Message a=Message.getOneMsg();
+		
+		Message b=new Message(a);
+		b.setCommandID((short) 1200);
+		
+		Message c=(Message) depthClone(a);
+		
+		System.out.println(a+"\n"+b+"\n"+c);
+		
+		System.out.println(a.getCommandID()+"\n"+b.getCommandID()+"\n"+c);
 
 	}
 

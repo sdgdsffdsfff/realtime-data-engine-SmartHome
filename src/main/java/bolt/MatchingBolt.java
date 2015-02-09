@@ -55,12 +55,17 @@ public class MatchingBolt  implements IRichBolt {
 		RunTimeTrigger matchedTrigger=null;
 		List<Object> line=input.getValues();
 		List<String> fields=input.getFields().toList();
-		int ctrolID=(Integer)line.get(fields.indexOf("ctrolID"));
+		int ctrolID=Integer.parseInt((String) line.get(fields.indexOf("ctrolID")));
 		Map<Integer, RunTimeTrigger>  triggerList=embededTriggerMap.get(ctrolID);
+		if(triggerList==null){
+			return;
+		}
 		for (Entry<Integer, RunTimeTrigger>  entry:triggerList.entrySet()) {			
 			matchedTrigger=entry.getValue().dataMatching(line, fields);
 			if(matchedTrigger!=null){
+				System.out.println("\n \t\t---------  matched: ctrolID="+matchedTrigger.getCtrolID()+",TriggerID"+matchedTrigger.getTriggerID());
 				_collector.emit(new Values(matchedTrigger.getCtrolID(),matchedTrigger));
+				
 			}
 			
 			/*if(null!=matchedFactors){

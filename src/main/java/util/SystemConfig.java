@@ -64,12 +64,23 @@ public class SystemConfig extends Config {
 		Socket socket=null;
 		String device_server_IP=conf.getProperty("device_server_IP", "172.16.35.173");
 		int device_server_port =Integer.parseInt(conf.getProperty("server_port","20190"));
+		InetAddress remoteaddress=null;
+		InetAddress localaddress=null;
 		try {
-			 socket=new Socket(device_server_IP, device_server_port);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+			remoteaddress = InetAddress.getByName(device_server_IP);
+			localaddress=InetAddress.getByName("0.0.0.0");
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
+		if(DataClient.isReachable(localaddress, remoteaddress, device_server_port, 5000)){		
+			try {
+				 socket=new Socket(device_server_IP, device_server_port);
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
 		}
 		return socket;
 	}

@@ -86,8 +86,8 @@ public class RunTimeTrigger extends Trigger{
 	public synchronized RunTimeTrigger  dataMatching(List<Object> dataLine,List<String> fields){
 		List<String> factorList=new ArrayList<String> ();
 		Boolean result=null;
-		int factorID=(Integer) dataLine.get(0);
-		int value=(Integer) dataLine.get(fields.indexOf("value")); 
+		int factorID=Integer.parseInt( (String) dataLine.get(0));
+		int value=Integer.parseInt( (String) dataLine.get(fields.indexOf("value"))); 
 		for(TriggerFactor factor:this.getTriggerFactorList()){
             //第1个条件：因素ID相同				
 			if(factor.getFactorID()!=factorID){
@@ -131,10 +131,14 @@ public class RunTimeTrigger extends Trigger{
 			}
 			result=result && result2;
 			
+
 			//第3个条件：roomID满足	
-			if(factorID<1000){  //数据因素匹配		
-				int roomID=(Integer) dataLine.get(fields.indexOf("roomID")); 
-				int roomType=(Integer) dataLine.get(fields.indexOf("roomType")); 
+			if(factorID<1000){  //数据因素匹配	
+				if(!fields.contains("roomType") || !fields.contains("roomID")){
+					return null;
+				}
+				int roomID=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomID"))); 
+				int roomType=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomType"))); 
 				if(factor.getRoomType()==254){  //任意房间类型
 					result=result && true;				
 				}else if (factor.getRoomType()==roomType && factor.getRoomID()==254) { //任意房间类型 或者ID相同
@@ -315,13 +319,13 @@ public class RunTimeTrigger extends Trigger{
 	public List<String> dataMatchBackup(List<Object> dataLine,List<String> fields){
 		List<String> factorList=new ArrayList<String> ();
 		Boolean result=null;
-		int factorID=(Integer) dataLine.get(0);
-		int value=(Integer) dataLine.get(fields.indexOf("value")); 
+		int factorID=Integer.parseInt( (String) dataLine.get(0));
+		int value=Integer.parseInt( (String) dataLine.get(fields.indexOf("value"))); 
 		if(factorID>=1000){  //系统因素匹配
 			return null;
 		}else{  //数据因素匹配		
-			int roomID=(Integer) dataLine.get(fields.indexOf("roomID")); 
-			int roomType=(Integer) dataLine.get(fields.indexOf("roomType")); 
+			int roomID=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomID"))); 
+			int roomType=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomType"))); 
 			for(TriggerFactor factor:this.getTriggerFactorList()){				
                 //第1个条件：因素ID相同				
 				if(factor.getFactorID()!=factorID){

@@ -34,7 +34,7 @@ public class PraseXmlUtil
             Document doc = db.parse("data_format.xml");  
   
             NodeList dogList = doc.getElementsByTagName("struct");  
-            System.out.println("共有" + dogList.getLength() + "个struct节点");  
+            //System.out.println("共有" + dogList.getLength() + "个struct节点");  
             dataXMLMap=new HashMap<Integer, List<Column>>();
             for (int i = 0; i < dogList.getLength(); i++)  
             {  
@@ -58,7 +58,7 @@ public class PraseXmlUtil
                     	column.setColumnName(name);
                     	column.setDataType(type);
                     	columns.add(column); 
-                    	System.out.print(index+ "\t"+ name + "\t"+ type + "\t" +desc +"\n");
+                    	//System.out.print(index+ "\t"+ name + "\t"+ type + "\t" +desc +"\n");
                     	index++;
                     } 
                     
