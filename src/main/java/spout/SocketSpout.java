@@ -33,7 +33,7 @@ public class SocketSpout  extends BaseRichSpout {
 	private DataClient sock=null;
 	private PraseXmlUtil xml;
 	List<String> fields=new ArrayList<String>();
-	BufferedReader fileReader =null;
+	static BufferedReader fileReader =null;
 	//private Config config;
 	//String file="data.txt";
 
@@ -43,7 +43,7 @@ public class SocketSpout  extends BaseRichSpout {
 		this._collector=collector;
 		this.xml=new PraseXmlUtil();
 		try {
-			this.fileReader = new BufferedReader(new FileReader(new File("data.txt")));
+			fileReader = new BufferedReader(new FileReader(new File("data.txt")));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -54,7 +54,7 @@ public class SocketSpout  extends BaseRichSpout {
 	
 	@Override
 	public void nextTuple() {
-		Utils.sleep(500);
+		Utils.sleep(50);
 		String[] values=new String[5];
 		String data=null;
 		try {

@@ -33,7 +33,11 @@ import java.util.Map;
 import java.util.Random;
 
 public class RandomSentenceSpout extends BaseRichSpout {
-  SpoutOutputCollector _collector;
+  /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+SpoutOutputCollector _collector;
   Random _rand;
 
 

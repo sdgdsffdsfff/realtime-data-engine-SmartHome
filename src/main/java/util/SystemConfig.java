@@ -40,7 +40,7 @@ public class SystemConfig extends Config {
 		
 		String data_server_IP=conf.getValue("data_server_ip");
 		int data_server_port =Integer.parseInt(conf.getValue("data_server_port"));
-		InetAddress remoteaddress=null;
+/*		InetAddress remoteaddress=null;
 		InetAddress localaddress=null;
 		try {
 			remoteaddress = InetAddress.getByName(data_server_IP);
@@ -49,13 +49,13 @@ public class SystemConfig extends Config {
 			e1.printStackTrace();
 		};
 
-		if(DataClient.isReachable(localaddress, remoteaddress, data_server_port, 5000)){
+		if(DataClient.isReachable(localaddress, remoteaddress, data_server_port, 5000)){*/
 			try {
 				dataClient=new DataClient(data_server_IP,data_server_port);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}	
-		}
+		//}
 		
 		return dataClient;
 	}

@@ -30,7 +30,6 @@ import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
-
 import com.cooxm.randowmSentenceTest.RandomSentenceSpout;
 
 import java.util.HashMap;
@@ -39,7 +38,7 @@ import java.util.Map;
 /**
  * This topology demonstrates Storm's stream groupings and multilang capabilities.
  */
-public class WordCountTopology {
+public class WordCountTopoloGy {
   public static class SplitSentence extends ShellBolt implements IRichBolt {
 
     public SplitSentence() {
