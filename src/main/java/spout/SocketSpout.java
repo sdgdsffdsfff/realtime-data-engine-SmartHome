@@ -54,7 +54,7 @@ public class SocketSpout  extends BaseRichSpout {
 	
 	@Override
 	public void nextTuple() {
-		Utils.sleep(50);
+		Utils.sleep(10);
 		String[] values=new String[5];
 		String data=null;
 		try {

@@ -1,9 +1,12 @@
 package bolt;
 
+import java.io.IOException;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 
+import cooxm.devicecontrol.util.MySqlClass;
 import spout.DataClient;
 import util.SystemConfig;
 import Trigger.RunTimeTrigger;
@@ -48,5 +51,22 @@ public class TriggerBolt implements IRichBolt{
 	@Override
 	public Map<String, Object> getComponentConfiguration() {
 		return null;
+	}
+	
+	
+	public static void main(String[] args) {
+		try {
+			Socket socket=new Socket("172.16.35.67", 20190);
+			Thread.sleep(10000);
+			socket.getOutputStream().write(new Byte("12345678901234567890123"));
+			socket.getOutputStream().flush();
+			Thread.sleep(100000);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }

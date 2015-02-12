@@ -19,9 +19,9 @@ public class TriggerEngineTopology {
 
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout("spout", new SocketSpout(), 1);
-    builder.setBolt("match", new MatchingBolt(), 2).fieldsGrouping("spout", new Fields("ctrolID"));
-    builder.setBolt("trigger", new TriggerBolt(), 1).fieldsGrouping("match", new Fields("ctrolID"));
+    builder.setSpout("spout", new SocketSpout(), 2);
+    builder.setBolt("match", new MatchingBolt(), 4).fieldsGrouping("spout", new Fields("ctrolID"));
+    builder.setBolt("trigger", new TriggerBolt(),2).fieldsGrouping("match", new Fields("ctrolID"));
 
     Config conf = new Config();
     conf.setDebug(true);
