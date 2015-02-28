@@ -29,8 +29,10 @@ import cooxm.devicecontrol.socket.Header;
 import cooxm.devicecontrol.socket.Message;
 
 
-public class DataClient  extends Socket  {
+public class DataClient   {
 	Socket sock=null;
+	String data_server_IP;
+	int data_server_port ;
 	private final static String            auth="ClusterID=1,ServerType=200,ServerID=5";
 	private final static String requestDataType="Sharding=false,DataTypeRange=All";
 	public static  BlockingQueue<String> dataQueue= new ArrayBlockingQueue<String>(50000);
@@ -96,23 +98,12 @@ public class DataClient  extends Socket  {
 	
 	
 	public DataClient(String IP,int port) throws IOException {
-		InetAddress remoteaddress;
-		InetAddress localaddress;
-		localaddress =InetAddress.getByName("0.0.0.0");// InetAddress.getByName(getLocalIP());	
-		remoteaddress = InetAddress.getByName(IP);
-		Boolean b=isReachable(localaddress, remoteaddress, port, 5000);
-   		if (!b) {    			
-   			return;
-   		}
+		this.data_server_IP=IP;
+		this.data_server_port=port;
 		String authResult=null;
 		String SubscribeCode=null;
-		try {
-			this.sock=new  Socket(IP,port);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();  
-		}	
+		this.sock=new  Socket(IP,port);
+	
 		if(this.sock==null){
 			System.out.println("Connect to "+IP+":"+port+" failed.");
 			return;
@@ -174,10 +165,14 @@ public class DataClient  extends Socket  {
     public void toQueue(){
     	String data=null;
     	try {
-			while((data=this.input.readLine())!=null){
-				if(dataQueue.offer(data, 1000, TimeUnit.MILLISECONDS)){
-					dataQueue.add(data);
-				}				
+			while(true){
+				if((data=this.input.readLine())!=null){
+					if(dataQueue.offer(data, 1000, TimeUnit.MILLISECONDS)){
+						dataQueue.add(data);
+					}
+				}else{
+					
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -231,14 +226,14 @@ public class DataClient  extends Socket  {
 //		remoteaddress = InetAddress.getByName(IP);
 //		Boolean b=isReachable(localaddress, remoteaddress, port, 5000);
 //   		if (b) {
-   			DataClient sock=new DataClient("172.16.35.174", 10490);
+   			DataClient client=new DataClient("172.16.35.174", 10490);
    			int count=0;
-   			while(sock!=null && sock.isConnected()  ){
-   			    String data=sock.input.readLine();
+   			while(client!=null && client.sock.isConnected()  ){
+   			    String data=client.input.readLine();
    			    if(data==null){
    			    	//Thread.sleep(10*1000);		    	
-   			    	sock=new DataClient("172.16.35.174", 10490);
-   			    	if(sock.input.readLine()==null){ 
+   			    	client=new DataClient("172.16.35.174", 10490);
+   			    	if(client.input.readLine()==null){ 
    						System.out.println("Disconnect");
    				    	break;		
    			    	}
@@ -249,7 +244,7 @@ public class DataClient  extends Socket  {
    						count=0;
    						System.out.print("\n");
    					}
-   					sock.writer.write(data+"\n");
+   					client.writer.write(data+"\n");
    			    }
    			}
 		//}

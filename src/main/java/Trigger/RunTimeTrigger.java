@@ -1,7 +1,5 @@
 package Trigger;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -9,10 +7,6 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-import com.sun.org.apache.bcel.internal.classfile.Unknown;
-
-import clojure.string__init;
-import cooxm.devicecontrol.control.LogicControl;
 import cooxm.devicecontrol.device.Trigger;
 import cooxm.devicecontrol.device.TriggerFactor;
 

@@ -1,3 +1,4 @@
+import spout.FileSpout;
 import spout.SocketSpout;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
@@ -19,9 +20,10 @@ public class TriggerEngineTopology {
 
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout("spout", new SocketSpout(), 2);
+    //builder.setSpout("spout", new SocketSpout(), 2);
+    builder.setSpout("spout", new FileSpout(), 2);
     builder.setBolt("match", new MatchingBolt(), 4).fieldsGrouping("spout", new Fields("ctrolID"));
-    builder.setBolt("trigger", new TriggerBolt(),2).fieldsGrouping("match", new Fields("ctrolID"));
+    builder.setBolt("trigger", new TriggerBolt(),1).fieldsGrouping("match", new Fields("ctrolID"));
 
     Config conf = new Config();
     conf.setDebug(true);
@@ -33,12 +35,9 @@ public class TriggerEngineTopology {
     }
     else {
       conf.setMaxTaskParallelism(12);
-
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("trigger-engine", conf, builder.createTopology());
-
       //Thread.sleep(1000000);
-
       //cluster.shutdown();
     }
   }

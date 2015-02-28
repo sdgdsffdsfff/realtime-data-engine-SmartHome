@@ -6,7 +6,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 import spout.DataClient;
-import cooxm.devicecontrol.control.Config;
+import cooxm.devicecontrol.control.Configure;
 import cooxm.devicecontrol.util.MySqlClass;
 
 /** 
@@ -14,11 +14,11 @@ import cooxm.devicecontrol.util.MySqlClass;
  * @version Created：2 Feb 2015 17:14:23 
  */
 
-public class SystemConfig extends Config {
+public class SystemConfig extends Configure {
 
 	private static final long serialVersionUID = 1L;
 	private static  SystemConfig config = new SystemConfig();
-	static Config conf;
+	static Configure conf;
 	private static MySqlClass mysql;	
 	private static DataClient dataClient;
 
@@ -86,7 +86,7 @@ public class SystemConfig extends Config {
 	}
 
 	private SystemConfig() {
-		this.conf =new Config();
+		this.conf =new Configure();
 	}
 	
 	public int getTriggerTimeOut(){
@@ -98,7 +98,7 @@ public class SystemConfig extends Config {
 		SystemConfig confg=SystemConfig.getConf();
 		MySqlClass mysql=confg.getMysql();
 		System.out.println(mysql.select("show tables;"));
-		Socket sock=confg.getDataClient();
+		DataClient sock=confg.getDataClient();
 		
 		try {
 			System.in.read();

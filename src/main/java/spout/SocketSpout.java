@@ -1,5 +1,8 @@
 package spout;
-
+/** 
+ * @author Chen Guanghua E-mail: richard@cooxm.com
+ * @version Created��4 Jan 2015 14:46:33 
+ */
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,7 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
+
 import util.PraseXmlUtil;
+import cooxm.devicecontrol.control.Configure;
 import cooxm.devicecontrol.util.MySqlClass;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -20,65 +26,58 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-/** 
- * @author Chen Guanghua E-mail: richard@cooxm.com
- * @version Created��4 Jan 2015 14:46:33 
- */
 
 public class SocketSpout  extends BaseRichSpout {
+	
+	static Logger log =Logger.getLogger(SocketSpout.class);
 
 	/**	 SocketSpout serialVersionUID	 */
 	private static final long serialVersionUID = -4421366287283662726L;
 	private SpoutOutputCollector _collector;
-	private DataClient sock=null;
+	private DataClient dataClient=null;
+	String data_server_IP;
+	int data_server_port ;
 	private PraseXmlUtil xml;
 	List<String> fields=new ArrayList<String>();
-	static BufferedReader fileReader =null;
-	//private Config config;
-	//String file="data.txt";
+
 
 	@Override
 	public void open(Map conf, TopologyContext context,
 			SpoutOutputCollector collector) {
 		this._collector=collector;
 		this.xml=new PraseXmlUtil();
-		try {
-			fileReader = new BufferedReader(new FileReader(new File("data.txt")));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+
+		
+		Configure config=new Configure();
+		this.data_server_IP=config.getValue("data_server_ip");
+		this.data_server_port =Integer.parseInt(config.getValue("data_server_port"));	
+		while(true){
+			try {
+				this.dataClient= new DataClient(data_server_IP,data_server_port);
+				log.info("SocketSpout,connect to "+data_server_IP+":" +data_server_port+"success.");				
+			} catch (IOException e) {
+				log.error(e);
+				try {
+					this.dataClient.sock.close();
+					log.error("SocketSpout,connect to "+data_server_IP+":" +data_server_port+"failed, socket will be close().");
+					Thread.sleep(30*1000);
+					this.dataClient= new DataClient(data_server_IP,data_server_port);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+			}
+			if(this.dataClient!=null){
+				this.dataClient.toQueue();	
+				break;
+			}
 		}
-//		SystemConfig config= SystemConfig.getConf();
-//		this.sock=config.getDataClient();
-//		this.sock.toQueue();	
 	}
+	
+
 	
 	@Override
-	public void nextTuple() {
-		Utils.sleep(10);
-		String[] values=new String[5];
-		String data=null;
-		try {
-			if((data=fileReader.readLine())!=null){				
-				String[] columns=data.split(",");				
-				this.fields=xml.getColumnNames(Integer.parseInt(columns[0]));
-				values[0]=columns[this.fields.indexOf("factorID")];
-				values[1]=columns[this.fields.indexOf("timeStamp")];
-				values[2]=columns[this.fields.indexOf("ctrolID")];
-				values[3]=columns[this.fields.indexOf("roomID")];
-				values[4]=columns[this.fields.indexOf("value")];
-				
-				_collector.emit( new Values( values));	
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}		
-	}
-	
-/*	@Override
 	public void nextTuple() {
 		Utils.sleep(100);
 		String data=null;
@@ -93,14 +92,12 @@ public class SocketSpout  extends BaseRichSpout {
 					return;
 				}
 			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}		
-	}*/
+	}
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {		
