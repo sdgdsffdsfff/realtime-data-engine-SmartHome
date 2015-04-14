@@ -1,4 +1,4 @@
-package Trigger;
+package trigger;
 
 import java.util.ArrayList;
 import java.util.Calendar;

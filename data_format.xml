@@ -6,31 +6,83 @@
     2、 字符串类型目前size填写的是0,也请根据实际需要确定长度
  -->
  
-	<struct name="audio"	id="40"	desc="声音"> 
+	<struct name="light"	id="201"	desc="光强度"> 
 		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
-		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
+		<entry name="timeStamp"	type="datetime"	size=""	desc="时间戳,格式YYYYMMDDHHMMSSsss"/> 
 		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
-		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
+		<entry name="deviceID"	type="uint"	size=""	desc="设备ID"/> 
+		<entry name="roomType"	type="int"	size=""	desc="房间类型，1：客厅;	2：卧室;	  3：厨房;	 4：卫生间"/> 
+		<entry name="roomID"	type="int"	size=""	desc="房间ID"/> 
+		<entry name="wallID"	type="int"	size=""	desc="墙ID"/> 
 		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="rate"	type="bigint"	size=""	desc="数据变化率"/>
 	</struct>
-	<struct name="AudioSpectrum"	id="50"	desc="声音频谱信息"> 
+	<struct name="PM25"	id="301"	desc="PM25"> 
 		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
-		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
+		<entry name="timeStamp"	type="datetime"	size=""	desc="时间戳,格式YYYYMMDDHHMMSSsss"/> 
 		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
-		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
-		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
+		<entry name="deviceID"	type="uint"	size=""	desc="设备ID"/> 
+		<entry name="roomType"	type="int"	size=""	desc="房间类型，1：客厅;	2：卧室;	  3：厨房;	 4：卫生间"/> 
+		<entry name="roomID"	type="int"	size=""	desc="房间ID"/> 
+		<entry name="wallID"	type="int"	size=""	desc="墙ID"/> 
 		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
-		<entry name="value2"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="rate"	type="bigint"	size=""	desc="数据变化率"/>
+	</struct>	
+	<struct name="harmGas"	id="401"	desc="有害气体"> 
+		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="timeStamp"	type="datetime"	size=""	desc="时间戳,格式YYYYMMDDHHMMSSsss"/> 
+		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
+		<entry name="deviceID"	type="uint"	size=""	desc="设备ID"/> 
+		<entry name="roomType"	type="int"	size=""	desc="房间类型，1：客厅;	2：卧室;	  3：厨房;	 4：卫生间"/> 
+		<entry name="roomID"	type="int"	size=""	desc="房间ID"/> 
+		<entry name="wallID"	type="int"	size=""	desc="墙ID"/> 
+		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="rate"	type="bigint"	size=""	desc="数据变化率"/>
+	</struct>	
+	<struct name="moisture"	id="501"	desc="湿度"> 
+		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="timeStamp"	type="datetime"	size=""	desc="时间戳,格式YYYYMMDDHHMMSSsss"/> 
+		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
+		<entry name="deviceID"	type="uint"	size=""	desc="设备ID"/> 
+		<entry name="roomType"	type="int"	size=""	desc="房间类型，1：客厅;	2：卧室;	  3：厨房;	 4：卫生间"/> 
+		<entry name="roomID"	type="int"	size=""	desc="房间ID"/> 
+		<entry name="wallID"	type="int"	size=""	desc="墙ID"/> 
+		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="rate"	type="bigint"	size=""	desc="数据变化率"/>
+	</struct>	
+	<struct name="temprature"	id="601"	desc="温度"> 
+		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="timeStamp"	type="datetime"	size=""	desc="时间戳,格式YYYYMMDDHHMMSSsss"/> 
+		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
+		<entry name="deviceID"	type="uint"	size=""	desc="设备ID"/> 
+		<entry name="roomType"	type="int"	size=""	desc="房间类型，1：客厅;	2：卧室;	  3：厨房;	 4：卫生间"/> 
+		<entry name="roomID"	type="int"	size=""	desc="房间ID"/> 
+		<entry name="wallID"	type="int"	size=""	desc="墙ID"/> 
+		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="rate"	type="bigint"	size=""	desc="数据变化率"/>
 	</struct>
-	<struct name="ChPwd"	id="33"	desc="修改角色密码日志"> 
+	<struct name="weathreReport"	id="701"	desc="天气预报"> 
 		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
-		<entry name="timeStamp"	type="ubigint"	size=""	desc="时间戳"/> 
+		<entry name="timeStamp"	type="datetime"	size=""	desc="时间戳,格式YYYYMMDDHHMMSSsss"/> 
 		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
-		<entry name="roomID"	type="datetime"	size=""	desc="房间编号"/> 
-		<entry name="sensorID"	type="varchar"	size="0"	desc="传感器编号"/> 
+		<entry name="deviceID"	type="uint"	size=""	desc="设备ID"/> 
+		<entry name="roomType"	type="int"	size=""	desc="房间类型，1：客厅;	2：卧室;	  3：厨房;	 4：卫生间"/> 
+		<entry name="roomID"	type="int"	size=""	desc="房间ID"/> 
+		<entry name="wallID"	type="int"	size=""	desc="墙ID"/> 
 		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
-		<entry name="value2"	type="bigint"	size=""	desc="数据的值"/> 
-	</struct>													
+		<entry name="rate"	type="bigint"	size=""	desc="数据变化率"/>
+	</struct>
+	<struct name="audio"	id="901"	desc="声音"> 
+		<entry name="factorID"	type="ubigint"	size=""	desc="数据类型(传感器类型)"/> 
+		<entry name="timeStamp"	type="datetime"	size=""	desc="时间戳,格式YYYYMMDDHHMMSSsss"/> 
+		<entry name="ctrolID"	type="uint"	size=""	desc="中控号"/> 
+		<entry name="deviceID"	type="uint"	size=""	desc="设备ID"/> 
+		<entry name="roomType"	type="int"	size=""	desc="房间类型，1：客厅;	2：卧室;	  3：厨房;	 4：卫生间"/> 
+		<entry name="roomID"	type="int"	size=""	desc="房间ID"/> 
+		<entry name="wallID"	type="int"	size=""	desc="墙ID"/> 
+		<entry name="value"	type="bigint"	size=""	desc="数据的值"/> 
+		<entry name="rate"	type="bigint"	size=""	desc="数据变化率"/>
+	</struct>
 </metalib>
 
 

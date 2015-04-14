@@ -149,10 +149,6 @@ public class DataClient   {
     	reader = new InputStreamReader(this.sock.getInputStream());
     	input=new BufferedReader(reader) ;
 	}
-	
-
-	
-
     
     public  void writeMsgToScok(String msg) throws IOException   
     {
@@ -226,13 +222,13 @@ public class DataClient   {
 //		remoteaddress = InetAddress.getByName(IP);
 //		Boolean b=isReachable(localaddress, remoteaddress, port, 5000);
 //   		if (b) {
-   			DataClient client=new DataClient("172.16.35.174", 10490);
+   			DataClient client=new DataClient("172.16.35.16", 10490);
    			int count=0;
    			while(client!=null && client.sock.isConnected()  ){
    			    String data=client.input.readLine();
    			    if(data==null){
    			    	//Thread.sleep(10*1000);		    	
-   			    	client=new DataClient("172.16.35.174", 10490);
+   			    	client=new DataClient("172.16.35.16", 10490);
    			    	if(client.input.readLine()==null){ 
    						System.out.println("Disconnect");
    				    	break;		
@@ -243,8 +239,11 @@ public class DataClient   {
    					if(count>=160){
    						count=0;
    						System.out.print("\n");
+   						client.writer.flush();
    					}
-   					client.writer.write(data+"\n");
+   					client.writer.write(data+"\n"); 
+   					
+   					//System.out.println(data);
    			    }
    			}
 		//}

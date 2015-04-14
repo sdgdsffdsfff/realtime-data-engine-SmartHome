@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import trigger.EmbededTriggerMap;
+import trigger.RunTimeTrigger;
 import util.SystemConfig;
-import Trigger.EmbededTriggerMap;
-import Trigger.RunTimeTrigger;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
@@ -49,7 +49,7 @@ public class MatchingBolt  implements IRichBolt {
 
 	@Override
 	public void execute(Tuple input) {
-		if(input==null){
+		if(input==null ){
 			return;
 		}
 		RunTimeTrigger matchedTrigger=null;

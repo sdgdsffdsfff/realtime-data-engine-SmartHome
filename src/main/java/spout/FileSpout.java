@@ -45,22 +45,27 @@ public class FileSpout extends BaseRichSpout{
 
 	@Override
 	public void nextTuple() {
-		//Utils.sleep(10);
-		String[] values=new String[5];
+		Utils.sleep(500);
 		String data=null;
 		try {
 			if((data=fileReader.readLine())!=null){	
-				String[] columns=data.split(",");				
+				String[] columns=data.split(",");	
+				String[] values=new String[columns.length];
 				this.fields=xml.getColumnNames(Integer.parseInt(columns[0]));
 				if(this.fields!=null){
 					values[0]=columns[this.fields.indexOf("factorID")];
 					values[1]=columns[this.fields.indexOf("timeStamp")];
 					values[2]=columns[this.fields.indexOf("ctrolID")];
-					values[3]=columns[this.fields.indexOf("roomID")];
-					values[4]=columns[this.fields.indexOf("value")];
+					values[3]=columns[this.fields.indexOf("deviceID")];
+					values[4]=columns[this.fields.indexOf("roomType")];
+					values[5]=columns[this.fields.indexOf("roomID")];
+					values[6]=columns[this.fields.indexOf("wallID")];
+					values[7]=columns[this.fields.indexOf("value")];					
+					values[8]=columns[this.fields.indexOf("rate")];
 					
-					_collector.emit( new Values( values));	
+					_collector.emit( new Values( columns)/*,new Values(ctrolID)*/);	
 				}
+				
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -73,7 +78,7 @@ public class FileSpout extends BaseRichSpout{
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("factorID","timeStamp","ctrolID","roomID","value"	));
+		declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate"));  //"factorID","timeStamp","ctrolID","roomID","value"
 	}
 
 }
