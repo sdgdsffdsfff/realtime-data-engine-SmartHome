@@ -45,7 +45,7 @@ public class FileSpout extends BaseRichSpout{
 
 	@Override
 	public void nextTuple() {
-		Utils.sleep(500);
+		Utils.sleep(10);
 		String data=null;
 		try {
 			if((data=fileReader.readLine())!=null){	

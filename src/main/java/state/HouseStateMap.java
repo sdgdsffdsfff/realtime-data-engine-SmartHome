@@ -1,5 +1,6 @@
 package state;
 
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,16 +14,20 @@ import cooxm.devicecontrol.control.Configure;
 
 public class HouseStateMap {
 	
-	public HouseStateMap(){}
+	public HouseStateMap(){
+		stateMap = new HashMap<Integer, HouseState>();
+		avgStateMap = new HashMap<Integer, HashMap<Integer, Double>>();
+	}
 	
 	/** ctrolID, houseState */
-	public  Map<Integer, HouseState> stateMap = new HashMap<Integer, HouseState>();
+	public  Map<Integer, HouseState> stateMap ;//= new HashMap<Integer, HouseState>();
 	/** ctrolID, Map< Integer, Double > */
-	public  Map<Integer,HashMap<Integer, Double>> avgStateMap = new HashMap<Integer, HashMap<Integer, Double>>();
+	public  Map<Integer,HashMap<Integer, Double>> avgStateMap;// = new HashMap<Integer, HashMap<Integer, Double>>();
 	
-	public String getAverageHouseState(){
+	public String getAverageHouseState(){		
 		String averageHouseStateString=null;
 		for (Map.Entry<Integer, HouseState> entry1 : stateMap.entrySet()) {
+			HashMap<Integer, Double> factorAvgMap=new HashMap<Integer, Double>();
 			for (HashMap.Entry<Integer, HashMap<Integer, Integer>> entry2 : entry1.getValue().entrySet()) {
 				int sum=0;
 				int count=entry2.getValue().size();
@@ -35,18 +40,17 @@ public class HouseStateMap {
 				}else{
 					factorAvg=avgStateMap.get(entry1.getKey()).get(entry2.getKey());
 				}
-					
-				HashMap<Integer, Double> factorAvgMap=new HashMap<Integer, Double>();
 				factorAvgMap.put(entry2.getKey(), factorAvg);
-				avgStateMap.put(entry1.getKey(), factorAvgMap);
-				
-				averageHouseStateString=getAverageHouseStateString(factorAvgMap);
-			}			
+			}	
+			avgStateMap.put(entry1.getKey(), factorAvgMap);
+			
+			averageHouseStateString=getAverageHouseStateString(factorAvgMap);
 		}
 		return averageHouseStateString;
 	}
 	
 	public String getAverageHouseStateString(HashMap<Integer, Double> factorAvgMap){
+		DecimalFormat df = new DecimalFormat("#.00");
 		String avgArrayString="";
 		/*数组保存依次是：
 		0 2001	光强度
@@ -119,7 +123,7 @@ public class HouseStateMap {
 		}
 		
 		for (int i = 0; i < avgArray.length; i++) {
-			avgArrayString=avgArrayString+avgArray[i]+",";
+			avgArrayString=avgArrayString+df.format(avgArray[i])+",";
 		}
 		return avgArrayString.substring(0, avgArrayString.length()-1);
 	}

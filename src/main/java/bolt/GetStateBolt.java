@@ -26,7 +26,7 @@ public class GetStateBolt implements IRichBolt {
 	
 	Jedis jedis=null;
 	OutputCollector _collector;
-	HouseStateMap houseStateMap;
+	HouseStateMap houseStateMap;//=new HouseStateMap();
 
 
 	@Override
@@ -56,7 +56,7 @@ public class GetStateBolt implements IRichBolt {
 			houseState=new HouseState();
 			houseState.setCtrolID(ctrolID);
 		}
-		HashMap<Integer, Integer> factorStateMap= houseState.get(ctrolID);
+		HashMap<Integer, Integer> factorStateMap= houseState.get(factorID);
 		if(factorStateMap==null){
 			factorStateMap=new HashMap<Integer, Integer>();
 		}
@@ -69,9 +69,8 @@ public class GetStateBolt implements IRichBolt {
 		Date nowDate=new Date();
 		int min=nowDate.getMinutes();
 		int second=nowDate.getSeconds();
-		if( /*(min%2) ==0 && */(second==0) ){
-		System.out.println(second +" | "+ String.valueOf(ctrolID)+" | "+ houseStateMap.getAverageHouseState());
-		//if( (second%10==0) ){	
+		if( (second==0) ){
+			System.out.println(second +" | "+ String.valueOf(ctrolID)+" | "+ houseStateMap.getAverageHouseState());
 			jedis.hset("houseState", String.valueOf(ctrolID), houseStateMap.getAverageHouseState());
 			this.houseStateMap=new HouseStateMap();
 		}

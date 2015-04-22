@@ -1,13 +1,10 @@
 import spout.FileSpout;
-import spout.SocketSpout;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import bolt.GetStateBolt;
-import bolt.MatchingBolt;
-import bolt.TriggerBolt;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -22,7 +19,7 @@ public class TriggerEngineTopology {
     TopologyBuilder builder = new TopologyBuilder();
 
     //builder.setSpout("spout", new SocketSpout(), 2);
-    builder.setSpout("spout", new FileSpout(), 2);
+    builder.setSpout("spout", new FileSpout(), 1);
     builder.setBolt("getState",new GetStateBolt(),2).fieldsGrouping("spout", new Fields("ctrolID"));
     //builder.setBolt("match", new MatchingBolt(),  4).fieldsGrouping("spout", new Fields("ctrolID"));
     //builder.setBolt("trigger", new TriggerBolt(), 1).fieldsGrouping("match", new Fields("ctrolID"));

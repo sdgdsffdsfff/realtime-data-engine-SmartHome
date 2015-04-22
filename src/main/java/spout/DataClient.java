@@ -17,16 +17,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.UnknownHostException;
-import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.omg.CORBA.INTERNAL;
-
-import cooxm.devicecontrol.socket.Header;
-import cooxm.devicecontrol.socket.Message;
 
 
 public class DataClient   {
@@ -222,7 +215,7 @@ public class DataClient   {
 //		remoteaddress = InetAddress.getByName(IP);
 //		Boolean b=isReachable(localaddress, remoteaddress, port, 5000);
 //   		if (b) {
-   			DataClient client=new DataClient("172.16.35.16", 10490);
+   			DataClient client=new DataClient("172.16.35.16", 20190);
    			int count=0;
    			while(client!=null && client.sock.isConnected()  ){
    			    String data=client.input.readLine();

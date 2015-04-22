@@ -9,7 +9,6 @@ import java.util.Map;
  * 存储各个家中传感器、家电状态
  * map< factorID, <deviceID,value>>
  */
-
 public class HouseState extends HashMap<Integer, HashMap<Integer, Integer>>  {
 	int ctrolID;
 	
@@ -26,15 +25,11 @@ public class HouseState extends HashMap<Integer, HashMap<Integer, Integer>>  {
 		this.ctrolID = ctrolID;
 	}
 	
-	public void getHouseStateByCtrolID(){
-		
-	}
 
 	public HouseState(int ctrolID,
 			Map<Integer, HashMap<Integer, Integer>> factorStateMap) {
 		super(factorStateMap);
 		this.ctrolID = ctrolID;
-
 	}	
 	
 	

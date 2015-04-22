@@ -105,7 +105,7 @@ public class SocketSpout  extends BaseRichSpout {
 	}
 	
 	public static void main(String[] args) {
-		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "root", "cooxm");
+		
 	}
 	
 }

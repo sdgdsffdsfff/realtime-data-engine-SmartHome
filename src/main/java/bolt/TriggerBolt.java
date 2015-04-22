@@ -1,7 +1,6 @@
 package bolt;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
@@ -10,11 +9,7 @@ import org.apache.log4j.Logger;
 
 import cooxm.devicecontrol.control.Configure;
 import cooxm.devicecontrol.socket.SocketClient;
-import cooxm.devicecontrol.util.MySqlClass;
-import spout.DataClient;
-import spout.SocketSpout;
 import trigger.RunTimeTrigger;
-import util.SystemConfig;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
