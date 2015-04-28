@@ -22,7 +22,7 @@ import backtype.storm.tuple.Tuple;
  * @version Created：Apr 7, 2015 2:32:55 PM 
  */
 
-public class GetStateBolt implements IRichBolt {
+public class HouseStateBolt implements IRichBolt {
 	
 	Jedis jedis=null;
 	OutputCollector _collector;

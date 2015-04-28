@@ -1,12 +1,21 @@
 package trigger;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import javax.swing.border.Border;
 
+import org.apache.log4j.Logger;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import clojure.lang.Compiler.NewExpr;
+import redis.clients.jedis.Jedis;
+import util.SystemConfig;
 import cooxm.devicecontrol.device.Trigger;
 import cooxm.devicecontrol.device.TriggerFactor;
 
@@ -16,7 +25,9 @@ import cooxm.devicecontrol.device.TriggerFactor;
  */
 
 public class RunTimeTrigger extends Trigger{
-	 public static Logger log= Logger.getLogger(RunTimeTrigger.class);;
+	 public static Logger log= Logger.getLogger(RunTimeTrigger.class);
+	 private static final int boundary= 3000;
+	 Jedis jedis;
 	
 	/**所有因素都满足的触发时间，初始值：1970-01-01 00：00:00 */
 	private Date triggerTime;
@@ -49,6 +60,9 @@ public class RunTimeTrigger extends Trigger{
 	}
 	public RunTimeTrigger(Trigger trigger, Date triggerTime, int state,int timeOut) {
 		super(trigger);
+		SystemConfig config= SystemConfig.getConf();
+		this.jedis=config.getJedis();
+
 		this.triggerTime = triggerTime;
 		this.state = state;
 		this.timeOut=timeOut;
@@ -64,10 +78,13 @@ public class RunTimeTrigger extends Trigger{
 	 * @Note 规则的有效性 已经在 triggerMap加载时将无效的规则过滤掉了
 	 * @return null  如果匹配失败
 	 * ctrolID_triggerID_factorID 如果成功返回匹配成功的因素列表,每一个匹配到的因素id
-	 * @factorID >= 1000为系统因素：
-	时间：  1001
-	星期几：1002
-	城市(IP)：1003
+	 * @factorID >= boundary为系统因素,没有数据推送，需要主动查询
+	3001	日期
+	3002	时间
+	3003	星期几
+	3011	省份
+	3012	城市
+	3021	当前情景模式类型
    operator:
 	1：= 等于
 	2：between 介于
@@ -78,10 +95,16 @@ public class RunTimeTrigger extends Trigger{
 	7:  <小于
 	8：not between不在之间*/
 	public synchronized RunTimeTrigger  dataMatching(List<Object> dataLine,List<String> fields){
-		List<String> factorList=new ArrayList<String> ();
+		//List<String> factorList=new ArrayList<String> ();
 		Boolean result=null;
 		int factorID=Integer.parseInt( (String) dataLine.get(0));
 		int value=Integer.parseInt( (String) dataLine.get(fields.indexOf("value"))); 
+		int ctrolID=Integer.parseInt( (String) dataLine.get(fields.indexOf("ctrolID"))); 
+		if(!fields.contains("roomType") || !fields.contains("roomID")){
+			return null;
+		}
+		int roomID=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomID"))); 
+		int roomType=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomType"))); 
 		for(TriggerFactor factor:this.getTriggerFactorList()){
             //第1个条件：因素ID相同				
 			if(factor.getFactorID()!=factorID){
@@ -127,12 +150,7 @@ public class RunTimeTrigger extends Trigger{
 			
 
 			//第3个条件：roomID满足	
-			if(factorID<1000){  //数据因素匹配	
-				if(!fields.contains("roomType") || !fields.contains("roomID")){
-					return null;
-				}
-				int roomID=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomID"))); 
-				int roomType=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomType"))); 
+			if(factorID<boundary){  //数据因素匹配	
 				if(factor.getRoomType()==254){  //任意房间类型
 					result=result && true;				
 				}else if (factor.getRoomType()==roomType && factor.getRoomID()==254) { //任意房间类型 或者ID相同
@@ -149,11 +167,11 @@ public class RunTimeTrigger extends Trigger{
 				factor.setState(true);
 				factor.setCreateTime(new Date());  //因素触发时间
 				this.state=1;      //已有条件满足，但是不是所有条件都满足；
-				if(factorID<1000){
+				if(factorID<boundary){
 					if(isDataSatisfied()){  //先判所有断数据条件是否满足要求
-						systemMatch();
+						systemMatch(ctrolID,roomID);
 						if(isSystemSatisfied() ){
-							if( this.state!=2){   //第一次触发
+							if( this.state!=2){   //第一次触发,所有条件都满足；
 								this.state=2;
 								this.triggerTime=new Date();
 							}
@@ -227,21 +245,37 @@ public class RunTimeTrigger extends Trigger{
 		
 	}
 	
-	public void systemMatch(){
+	public void systemMatch(int ctrolID,int roomID){
 		for(TriggerFactor factor:this.getTriggerFactorList()){		
 			int factorID=factor.getFactorID();
 			if(factorID<1000){
 				continue;
 			}else{
 				int value=-1;
-				switch (factorID) {
-				case 1001:  //时间因素
+				switch (factorID) {				
+				case 3001:  //日期因素
+					DateFormat sdf=new SimpleDateFormat("yyyyMMdd");
+					value=Integer.parseInt(sdf.format(new Date()));					
+					break;
+				case 3002:  //时间因素
 					value=(int) (System.currentTimeMillis()/1000);					
 					break;
-				case 1002:  //星期几
+				case 3003:  //星期几
 					Calendar c = Calendar.getInstance();
 					c.setTime(new Date(System.currentTimeMillis()));
-					value = c.get(Calendar.DAY_OF_WEEK);		
+					value = c.get(Calendar.DAY_OF_WEEK);	
+				case 3021:  //当前情景模式
+					String key=ctrolID+"_currentProfile";
+					String profileStr=this.jedis.hget(key, roomID+"");
+					if(profileStr==null){
+						continue ;
+					}
+					try {
+						JSONObject json=new JSONObject(profileStr);	
+						value = json.optInt("profileID");	
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}						
 				default:
 					break;
 				}
@@ -261,7 +295,7 @@ public class RunTimeTrigger extends Trigger{
 		Boolean orResult=null;
 		for(TriggerFactor factor:this.getTriggerFactorList()){		
 			int factorID=factor.getFactorID();
-			if(factorID<1000){
+			if(factorID<boundary){
 				continue;
 			}else{			
 				String logicSign=factor.getLogicalRelation();
@@ -286,10 +320,6 @@ public class RunTimeTrigger extends Trigger{
 			return result && orResult;
 		}		
 	}
-	
-
-	
-	
 	
 	/**<pre> 	 * 
 	 * @param dataLine 要匹配的数据
