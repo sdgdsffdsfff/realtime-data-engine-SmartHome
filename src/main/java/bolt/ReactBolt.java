@@ -89,7 +89,16 @@ public class ReactBolt implements IRichBolt{
 		int ctrolID=(Integer)line.get(0);
 		int roomID=(Integer)line.get(1);
 		int triggerid=(Integer)line.get(2);
-		List<TriggerTemplateReact> templateReact=MatchingBolt2.triggerMap.get(triggerid).getTriggerTemplateReactList();
+		TriggerTemplate tg = MatchingBolt2.triggerMap.get(triggerid);
+		if(tg==null){
+			log.error("can't get trigger in triggerMap,triggerID="+triggerid);
+			return;
+		}		
+		List<TriggerTemplateReact> templateReact=tg.getTriggerTemplateReactList();
+		if(templateReact==null){
+			log.error("Can't get React Template for triggerID:"+triggerid);
+			return;
+		}
 		for(TriggerTemplateReact react: templateReact){
 			Message msg=react.react(this.mysql, jedis, ctrolID, roomID);
 			msg.writeBytesToSock2(this.deviceControlServer);

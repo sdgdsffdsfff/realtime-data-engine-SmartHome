@@ -57,7 +57,7 @@ public class MatchingBolt  implements IRichBolt {
 		for (Entry<Integer, RunTimeTrigger>  entry:triggerList.entrySet()) {			
 			matchedTrigger=entry.getValue().dataMatching(line, fields);
 			if(matchedTrigger!=null){
-				System.out.println("\n \t\t---------  matched: ctrolID="+matchedTrigger.getCtrolID()+",TriggerID"+matchedTrigger.getTriggerID());
+				System.out.println("\t---------  matched: ctrolID="+matchedTrigger.getCtrolID()+",TriggerID"+matchedTrigger.getTriggerID());
 				_collector.emit(new Values(matchedTrigger.getCtrolID(),matchedTrigger));				
 			}
 			

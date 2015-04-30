@@ -40,8 +40,11 @@ public class MatchingBolt2  implements IRichBolt {
 			OutputCollector collector) {
 		this._collector=collector;
 		SystemConfig config= SystemConfig.getConf();
-		triggerMap = new TriggerTemplateMap(config.getMysql());	
-		//this.jedis=config.getJedis();
+		triggerMap = new TriggerTemplateMap(config.getMysql());
+//		for (Entry<Integer, TriggerTemplate>  entry:triggerMap.entrySet()) {
+//			entry.getValue().print();
+//		}
+
 	}
 
 	@Override
@@ -58,7 +61,7 @@ public class MatchingBolt2  implements IRichBolt {
 			RunTimeTriggerTemplate runTrigger=new RunTimeTriggerTemplate(entry.getValue(),new Date(0),0, SystemConfig.getConf().getTriggerTimeOut());
 			matchedTriggerID=runTrigger.dataMatching(line, fields);
 			if(matchedTriggerID!=-1){
-				System.out.println("\n \t\t---------  matched: ctrolID="+ctrolID+",TriggerID"+matchedTriggerID);
+				//System.out.println("\n \t\t---------  matched: ctrolID="+ctrolID+",TriggerID"+matchedTriggerID);
 				_collector.emit(new Values(ctrolID,roomID,matchedTriggerID));				
 			}
 		}		

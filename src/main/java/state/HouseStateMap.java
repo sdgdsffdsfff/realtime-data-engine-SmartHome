@@ -1,11 +1,20 @@
 package state;
 
+import java.sql.SQLException;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import redis.clients.jedis.Jedis;
 import cooxm.devicecontrol.control.Configure;
+import cooxm.devicecontrol.device.Factor;
+import cooxm.devicecontrol.device.FactorTemplate;
+import cooxm.devicecontrol.device.Profile;
+import cooxm.devicecontrol.device.ProfileTemplate;
+import cooxm.devicecontrol.util.MySqlClass;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -129,15 +138,26 @@ public class HouseStateMap {
 	}
 	
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 
 		Configure cf=new Configure();
 		String redis_ip         =cf.getValue("redis_ip");
 		int redis_port       	=Integer.parseInt(cf.getValue("redis_port"));
-		System.out.println(redis_ip+" "+redis_port);
-		Jedis jedis=new Jedis(redis_ip, redis_port,500);	
-		//jedis.hset("houseState", String.valueOf(123456), "1.5,2.5,3.5");
-		System.out.println(jedis.hget("houseState", "123456"));
+		Jedis jedis=new Jedis(redis_ip, redis_port,500);
+		
+		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "root", "cooxm");
+		List<ProfileTemplate> ptempList=ProfileTemplate.getAllFromDB(mysql);
+//		ProfileTemplate a = ptempList.get(0);
+//		FactorTemplate b = ptempList.get(0).getFactorTemplateTempList().get(0);
+		
+		int[] ids={1256788,1256789};
+		for (int i = 2; i <3; i++) {
+			for (int j = 0; j < ids.length; j++) {
+				Profile p=new Profile(ptempList.get(i), ids[j]);
+				jedis.hset(p.getCtrolID()+"_currentProfile",p.getRoomID()+"", p.toJsonObj().toString());
+			}
+		} 
+		System.out.println("success");
 	}
 
 }

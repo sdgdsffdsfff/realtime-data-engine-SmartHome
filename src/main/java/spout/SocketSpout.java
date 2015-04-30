@@ -101,7 +101,7 @@ public class SocketSpout  extends BaseRichSpout {
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {		
-		declarer.declare(new Fields("factorID","timeStamp","ctrolID","roomID","value"	));
+		declarer.declare(new Fields("factorID","timeStamp","ctrolID","roomID","value"));
 	}
 	
 	public static void main(String[] args) {

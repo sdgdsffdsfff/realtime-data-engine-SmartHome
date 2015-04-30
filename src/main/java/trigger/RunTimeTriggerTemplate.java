@@ -78,20 +78,24 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 		this.timeOut=timeOut;
 	}
 	
-	public int getCurrentProfileTempID(int ctrolID,int roomID){
+	
+	public Profile getCurrentProfile(int ctrolID,int roomID){
 		String key=ctrolID+"_currentProfile";
 		String p=jedis.hget(key, roomID+"");
+		if(p==null || p==""){
+			log.error("profileTemplate not exist  in redis currentProfile,ctrolID="+ctrolID+",roomID="+roomID);
+			return null;
+		}
 		JSONObject json;
 		try {
 			json = new JSONObject(p);
 			Profile profile=new Profile(json);
-			return profile.getProfileTemplateID();
+			return profile;
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-		return -1;
+		return null;
 	}
-	
 
 	
 	/**<pre> 
@@ -131,11 +135,18 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 		int roomID=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomID"))); 
 		int roomType=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomType")));
 
-		int currentProfileTempID=getCurrentProfileTempID(ctrolID, roomID);
+		Profile p=getCurrentProfile(ctrolID, roomID);
+		if(p==null){
+			log.error("can't get current profile for ctrolID :"+ctrolID+",roomID="+roomID);
+			return -1;
+		}		
+		//System.out.println("ctrolID"+",roomID="+roomID+",Currntprofile="+p.getProfileID()+",模板="+p.getProfileTemplateID());
 		
 		//第1个条件：当前的情景模式满足	
-		if(currentProfileTempID==this.getProfileTemplateID() || this.getProfileTemplateID()==254 ){  
+		if( this.getProfileTemplateID()==254 ){  
 			result=true;		
+		}else if(p.getProfileTemplateID()==this.getProfileTemplateID() ){
+			result=true;	
 		}else{
 			result=false;
 			return -1;
@@ -144,8 +155,16 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 		for(TriggerTemplateFactor factor:this.getTriggerTemplateFactorList()){
 			
 			if(factorID<boundary){  //数据因素匹配					
-	            //第2个条件：因素ID相同	，并且云智能打开			
-				if(factor.getFactorID()==factorID  && factor.getValidFlag()==1){
+	            //第2个条件：因素ID相同	，并且云智能打开	
+				int validflag;
+				if(p.getFactor(factorID)==null){
+					//log.warn("can't get factor from its currentProfile,CtrolID="+ctrolID+",profileID="+p.getProfileID()
+						//	+",factorID="+factorID+".Set validFlag to default value 1");
+					validflag=1;
+				}else{
+					validflag=p.getFactor(factorID).getValidFlag();
+				}
+				if(factor.getFactorID()==factorID  && validflag==1){
 					result=true;
 				}else{
 					result=false;
