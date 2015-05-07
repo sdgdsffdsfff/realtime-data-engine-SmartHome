@@ -23,7 +23,7 @@ public class TriggerEngineTopology {
 
     //builder.setSpout("spout", new SocketSpout(), 2);
     builder.setSpout("spout", new FileSpout(), 1);
-    builder.setBolt("getState",new HouseStateBolt(),2).fieldsGrouping("spout", new Fields("ctrolID"));
+    //builder.setBolt("getState",new HouseStateBolt(),2).fieldsGrouping("spout", new Fields("ctrolID"));
     builder.setBolt("match", new MatchingBolt2(),  4).fieldsGrouping("spout", new Fields("ctrolID"));
     builder.setBolt("trigger", new ReactBolt(), 1).fieldsGrouping("match", new Fields("ctrolID"));
 

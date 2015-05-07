@@ -1,5 +1,7 @@
 package bolt;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,14 +65,13 @@ public class HouseStateBolt implements IRichBolt {
 		factorStateMap.put(deviceID, value);
 		houseState.put(factorID, factorStateMap);	
 		houseStateMap.stateMap.put(ctrolID, houseState);
-		
 
-		//int second=java.util.Calendar.SECOND;
+		DateFormat sdf=new SimpleDateFormat("HH:mm:ss");
 		Date nowDate=new Date();
-		int min=nowDate.getMinutes();
+		//int min=nowDate.getMinutes();
 		int second=nowDate.getSeconds();
-		if( (second==0) ){
-			System.out.println(second +" | "+ String.valueOf(ctrolID)+" | "+ houseStateMap.getAverageHouseState());
+		if( (second%30==0) ){
+			System.out.println(sdf.format(nowDate)+" | "+String.valueOf(ctrolID)+" | "+ houseStateMap.getAverageHouseState());
 			jedis.hset("houseState", String.valueOf(ctrolID), houseStateMap.getAverageHouseState());
 			this.houseStateMap=new HouseStateMap();
 		}

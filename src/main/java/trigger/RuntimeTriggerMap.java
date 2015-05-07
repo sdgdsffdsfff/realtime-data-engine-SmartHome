@@ -20,13 +20,13 @@ import cooxm.devicecontrol.util.MySqlClass;
 /**
 将Map<ctrolID_triggerID,trigger>改造为Map<ctrolID,Map<triggerID,trigger>嵌套结构
  */
-public class EmbededTriggerMap extends HashMap<Integer, HashMap<Integer,RunTimeTrigger>>{
+public class RuntimeTriggerMap extends HashMap<Integer, HashMap<Integer,RunTimeTrigger>>{
 	private static final long serialVersionUID = 1L;
 	
 	/**
 	将Map<ctrolID_triggerID,trigger>改造为Map<ctrolID,Map<triggerID,trigger>嵌套结构
 	 */
-	public EmbededTriggerMap(TriggerMap triggerMap){
+	public RuntimeTriggerMap(TriggerMap triggerMap){
 		HashMap<Integer, RunTimeTrigger> triggerList=null;
 		for (Entry<String,Trigger>entry: triggerMap.entrySet()){
 			//Trigger trigger=(Trigger) GeneralMethod.depthClone(entry.getValue());
@@ -68,7 +68,7 @@ public class EmbededTriggerMap extends HashMap<Integer, HashMap<Integer,RunTimeT
 	public static void main(String[] args) {
 		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "root", "cooxm");
 		TriggerMap rm=new TriggerMap(mysql);
-		EmbededTriggerMap dm=new EmbededTriggerMap(rm);
+		RuntimeTriggerMap dm=new RuntimeTriggerMap(rm);
 		System.out.println(dm.size());
 
 	}

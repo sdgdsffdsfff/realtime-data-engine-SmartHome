@@ -23,15 +23,39 @@ import cooxm.devicecontrol.util.MySqlClass;
 
 public class HouseStateMap {
 	
-	public HouseStateMap(){
-		stateMap = new HashMap<Integer, HouseState>();
-		avgStateMap = new HashMap<Integer, HashMap<Integer, Double>>();
-	}
+
 	
 	/** ctrolID, houseState */
 	public  Map<Integer, HouseState> stateMap ;//= new HashMap<Integer, HouseState>();
 	/** ctrolID, Map< Integer, Double > */
 	public  Map<Integer,HashMap<Integer, Double>> avgStateMap;// = new HashMap<Integer, HashMap<Integer, Double>>();
+	
+	
+	public Map<Integer, HouseState> getStateMap() {
+		return stateMap;
+	}
+
+
+	public void setStateMap(Map<Integer, HouseState> stateMap) {
+		this.stateMap = stateMap;
+	}
+
+
+	public Map<Integer, HashMap<Integer, Double>> getAvgStateMap() {
+		return avgStateMap;
+	}
+
+
+	public void setAvgStateMap(Map<Integer, HashMap<Integer, Double>> avgStateMap) {
+		this.avgStateMap = avgStateMap;
+	}
+
+
+	public HouseStateMap(){
+		stateMap = new HashMap<Integer, HouseState>();
+		avgStateMap = new HashMap<Integer, HashMap<Integer, Double>>();
+	}
+	
 	
 	public String getAverageHouseState(){		
 		String averageHouseStateString=null;
@@ -46,6 +70,9 @@ public class HouseStateMap {
 						sum+=entry3.getValue();					
 					}
 					factorAvg=sum*1.0/(count);
+					if(entry2.getKey()==2503){
+						factorAvg=Math.floor(factorAvg);
+					}
 				}else{
 					factorAvg=avgStateMap.get(entry1.getKey()).get(entry2.getKey());
 				}
@@ -75,36 +102,36 @@ public class HouseStateMap {
 		Double[] avgArray={(double) -1,(double) -1,(double) -1,(double) -1,(double) -1,(double) -1,(double) -1,(double) -1,(double) -1};
 		for  (HashMap.Entry<Integer, Double> entry: factorAvgMap.entrySet()){
 			switch (entry.getKey()) {
-			//2015-04-11 richard 重新定义
-			case 2001:
+			//2015-05-04 richard 重新定义
+			case 2501: //光
 				avgArray[0]=entry.getValue();
 				break;
-			case 2011:
+			case 2502: //PM2.5
 				avgArray[1]=entry.getValue();
 				break;
-			case 2021:
+			case 2503: //人体探测器
 				avgArray[2]=entry.getValue();
 				break;
-			case 2031:
+			case 2504:  //湿度
 				avgArray[3]=entry.getValue();
 				break;
-			case 2041:
+			case 2505:  //温度
 				avgArray[4]=entry.getValue();
 				break;
-			case 2061:
+			case 2506:  //噪音
 				avgArray[5]=entry.getValue();
 				break;
-			case 2301:
+			case 2507:  // 空气质量-6合1
 				avgArray[6]=entry.getValue();
-				break;
-			case 1201:
+				break; 
+			case 201:  //烟雾探测器-一氧化碳
 				avgArray[7]=entry.getValue();
 				break;
-			case 1301:
+			case 211:  //漏水探测器
 				avgArray[8]=entry.getValue();
 				break;
 			//------------------- 2015-04-11 之前 factorDict旧的 定义	
-			case 201:  //光
+			case 2011:  //光
 				avgArray[0]=entry.getValue();
 				break;
 			case 301:  //PM2.5

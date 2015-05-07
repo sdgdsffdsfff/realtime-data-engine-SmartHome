@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-
 import redis.clients.jedis.Jedis;
 import spout.DataClient;
 import cooxm.devicecontrol.control.Configure;
@@ -86,7 +85,9 @@ public class SystemConfig extends Configure {
 	public Jedis getJedis(){
 		String redis_ip         =conf.getValue("redis_ip");
 		int redis_port       	=Integer.parseInt(conf.getValue("redis_port"));	
-		return new Jedis(redis_ip, redis_port,200);
+		Jedis jedis=new  Jedis(redis_ip, redis_port,8000);
+		//jedis.configSet("timeout", "4000");
+		return jedis;
 	}
 	
 
@@ -101,11 +102,8 @@ public class SystemConfig extends Configure {
 			System.in.read();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		
+		}		
 		//MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "root", "cooxm");
-
-
 	}
 
 }

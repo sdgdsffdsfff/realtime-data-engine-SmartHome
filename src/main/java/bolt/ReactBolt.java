@@ -15,6 +15,7 @@ import cooxm.devicecontrol.device.TriggerTemplate;
 import cooxm.devicecontrol.device.TriggerTemplateMap;
 import cooxm.devicecontrol.device.TriggerTemplateReact;
 import cooxm.devicecontrol.device.Warn;
+import cooxm.devicecontrol.socket.CtrolSocketServer;
 import cooxm.devicecontrol.socket.Header;
 import cooxm.devicecontrol.socket.Message;
 import cooxm.devicecontrol.socket.SocketClient;
@@ -37,7 +38,7 @@ public class ReactBolt implements IRichBolt{
 	static Logger log =Logger.getLogger(ReactBolt.class);
 	private Jedis jedis;
 	MySqlClass mysql;
-	private  SocketClient deviceControlServer=null;
+	private static SocketClient deviceControlServer=null;
 	String IP;
 	int port;
 	int clusterID;
@@ -53,38 +54,38 @@ public class ReactBolt implements IRichBolt{
 		this.mysql=config.getMysql();
 		
 		this.IP=config.getProperty("device_server_IP", "172.16.35.173");
-		this.port =Integer.parseInt(config.getProperty("server_port","20190"));
+		this.port =Integer.parseInt(config.getProperty("device_server_port","20190"));
 		this.clusterID=1;
 		this.serverID=5;
 		this.serverType=200;	
 		
 		try {
-			this.deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType );
-			this.deviceControlServer.sendAuth(1,5,200);
-			log.info("SocketSpout,connect to "+this.IP+":" +this.port +"success.");				
+			deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType );
+			deviceControlServer.sendAuth(1,5,200);	
+			Message msg=CtrolSocketServer.readFromClient(deviceControlServer.sock);
+			if(msg!=null && msg.getJson()!=null && msg.getJson().optInt("errorCode")==0){
+				log.info("#------------    Success connect to "+this.IP+":" +this.port +"         -------------------#");
+			}else{
+				log.info("#------------    Failed to connect  "+this.IP+":" +this.port +"   -------------------#");
+			}
 		} catch (IOException e) {
 			log.error(e);
-			try {
-				log.error("SocketSpout,connect to "+this.IP+":" +this.port +"failed, socket will be close(). waiting for 30 to reconnect...");
-				Thread.sleep(30*1000);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
 		}
 	}
 
 	@Override
 	public void execute(Tuple input) {
-		if(this.deviceControlServer==null){
+		if(deviceControlServer==null){
 			try {
-				this.deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType );
-				this.deviceControlServer.sendAuth(1,6,201);
+				deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType );
+				deviceControlServer.sendAuth(1,6,201);
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}	
 		}
+
 		List<Object> line=input.getValues();
 		int ctrolID=(Integer)line.get(0);
 		int roomID=(Integer)line.get(1);
@@ -96,13 +97,16 @@ public class ReactBolt implements IRichBolt{
 		}		
 		List<TriggerTemplateReact> templateReact=tg.getTriggerTemplateReactList();
 		if(templateReact==null){
-			log.error("Can't get React Template for triggerID:"+triggerid);
+			log.error("Can't get Triiger ReactList for triggerID:"+triggerid);
 			return;
 		}
 		for(TriggerTemplateReact react: templateReact){
 			Message msg=react.react(this.mysql, jedis, ctrolID, roomID);
-			msg.writeBytesToSock2(this.deviceControlServer);
-			System.out.println("Congrats!! rule has been triggerd,ctrolID="+ctrolID+",TriggerID="+triggerid+",command="+Integer.toHexString(msg.getCommandID()));
+			if(msg!=null){
+				msg.writeBytesToSock2(deviceControlServer.sock);
+				System.out.println("Congrats!! rule has been triggerd,ctrolID="+ctrolID+",TriggerID="+triggerid+",command="+Integer.toHexString(msg.getCommandID()));
+			}
+			
 		}		
 	}
 

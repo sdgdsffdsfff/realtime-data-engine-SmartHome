@@ -207,14 +207,6 @@ public class DataClient   {
 	}
 
    	public static void main(String[] args) throws IOException, InterruptedException {
-//		InetAddress remoteaddress;
-//		InetAddress localaddress;
-//		String IP="172.16.35.170";
-//		int port =10490;
-//		localaddress =InetAddress.getByName("0.0.0.0");// InetAddress.getByName(getLocalIP());	
-//		remoteaddress = InetAddress.getByName(IP);
-//		Boolean b=isReachable(localaddress, remoteaddress, port, 5000);
-//   		if (b) {
    			DataClient client=new DataClient("172.16.35.16", 20190);
    			int count=0;
    			while(client!=null && client.sock.isConnected()  ){

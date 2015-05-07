@@ -7,10 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import jline.internal.Log;
 import redis.clients.jedis.Jedis;
-import trigger.EmbededTriggerMap;
 import trigger.RunTimeTrigger;
 import trigger.RunTimeTriggerTemplate;
+import trigger.RuntimeTriggerTemplateMap;
 import util.SystemConfig;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -20,6 +21,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import cooxm.devicecontrol.device.*;
+import cooxm.devicecontrol.util.MySqlClass;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -30,7 +32,8 @@ public class MatchingBolt2  implements IRichBolt {
 	
 	OutputCollector _collector;
 	public  static TriggerTemplateMap triggerMap=null;
-	//Jedis jedis;
+	public  RuntimeTriggerTemplateMap runTriggerMap=null;
+	Jedis jedis;
 	
 	
 
@@ -40,10 +43,13 @@ public class MatchingBolt2  implements IRichBolt {
 			OutputCollector collector) {
 		this._collector=collector;
 		SystemConfig config= SystemConfig.getConf();
+		MySqlClass mysql=config.getMysql();
+		TriggerTemplateMap triggerTempMap=new TriggerTemplateMap(mysql);
+		this.runTriggerMap=new RuntimeTriggerTemplateMap(triggerTempMap,mysql);
 		triggerMap = new TriggerTemplateMap(config.getMysql());
-//		for (Entry<Integer, TriggerTemplate>  entry:triggerMap.entrySet()) {
-//			entry.getValue().print();
-//		}
+		
+		this.jedis=config.getJedis();
+
 
 	}
 
@@ -57,14 +63,20 @@ public class MatchingBolt2  implements IRichBolt {
 		List<String> fields=input.getFields().toList();
 		int ctrolID=Integer.parseInt((String) line.get(fields.indexOf("ctrolID")));
 		int roomID=Integer.parseInt( (String) line.get(fields.indexOf("roomID")));
-		for (Entry<Integer, TriggerTemplate>  entry:triggerMap.entrySet()) {	
+		TriggerTemplateMap triggertemp=this.runTriggerMap.get(ctrolID);
+		if(triggertemp==null){
+			//Log.warn("can't find trigger from RuntimeTriggerTemplateMap by ctrolID:"+ctrolID+",please check table info_user_room_st.");
+			this.runTriggerMap.put(ctrolID, this.triggerMap);
+			triggertemp=triggerMap;
+		}
+		for (Entry<Integer, TriggerTemplate>  entry:triggertemp.entrySet()) {	
 			RunTimeTriggerTemplate runTrigger=new RunTimeTriggerTemplate(entry.getValue(),new Date(0),0, SystemConfig.getConf().getTriggerTimeOut());
-			matchedTriggerID=runTrigger.dataMatching(line, fields);
+			matchedTriggerID=runTrigger.dataMatching(line, fields,jedis);
 			if(matchedTriggerID!=-1){
 				//System.out.println("\n \t\t---------  matched: ctrolID="+ctrolID+",TriggerID"+matchedTriggerID);
 				_collector.emit(new Values(ctrolID,roomID,matchedTriggerID));				
 			}
-		}		
+		}			
 	}
 
 	@Override

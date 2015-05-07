@@ -25,18 +25,19 @@ import cooxm.devicecontrol.device.Trigger;
 import cooxm.devicecontrol.device.TriggerFactor;
 import cooxm.devicecontrol.device.TriggerTemplate;
 import cooxm.devicecontrol.device.TriggerTemplateFactor;
+import cooxm.devicecontrol.device.TriggerTemplateMap;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
  * @version Created：Feb 5, 2015 3:55:56 PM 
  */
 
-public class RunTimeTriggerTemplate extends TriggerTemplate{
+public class RunTimeTriggerTemplate  extends TriggerTemplate{
 	 public static Logger log= Logger.getLogger(RunTimeTriggerTemplate.class);
 	 private static final int boundary= 3000;
 	 Map<String,Thread> taskMap;
 	 
-	 Jedis jedis;
+	 //Jedis jedis;
 	/**所有因素都满足的触发时间，初始值：1970-01-01 00：00:00 */
 	private Date triggerTime;
 	/**<pre>状态：
@@ -68,8 +69,8 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 	}
 	public RunTimeTriggerTemplate(TriggerTemplate trigger, Date triggerTime, int state,int timeOut) {
 		super(trigger);
-		SystemConfig config= SystemConfig.getConf();
-		this.jedis=config.getJedis();
+		//SystemConfig config= SystemConfig.getConf();
+		//this.jedis=config.getJedis();
 		
 		this.taskMap=new HashMap<String, Thread>();
 
@@ -79,7 +80,7 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 	}
 	
 	
-	public Profile getCurrentProfile(int ctrolID,int roomID){
+	public  Profile getCurrentProfile(int ctrolID,int roomID,Jedis jedis){
 		String key=ctrolID+"_currentProfile";
 		String p=jedis.hget(key, roomID+"");
 		if(p==null || p==""){
@@ -122,7 +123,7 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 	6:  ≤小于等于
 	7:  <小于
 	8：not between不在之间*/
-	public synchronized int  dataMatching(List<Object> dataLine,List<String> fields){
+	public synchronized int  dataMatching(List<Object> dataLine,List<String> fields,Jedis jedis){
 		//List<String> factorList=new ArrayList<String> ();
 		Boolean result=null;
 		
@@ -134,18 +135,20 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 		}
 		int roomID=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomID"))); 
 		int roomType=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomType")));
-
-		Profile p=getCurrentProfile(ctrolID, roomID);
+		
+		
+		Profile p=getCurrentProfile(ctrolID, roomID,jedis);
 		if(p==null){
 			log.error("can't get current profile for ctrolID :"+ctrolID+",roomID="+roomID);
 			return -1;
-		}		
+		}
 		//System.out.println("ctrolID"+",roomID="+roomID+",Currntprofile="+p.getProfileID()+",模板="+p.getProfileTemplateID());
 		
 		//第1个条件：当前的情景模式满足	
-		if( this.getProfileTemplateID()==254 ){  
+		int profileTemplateID=this.getProfileTemplateID();
+		if( profileTemplateID==254 ){  
 			result=true;		
-		}else if(p.getProfileTemplateID()==this.getProfileTemplateID() ){
+		}else if(p.getProfileTemplateID()==profileTemplateID ){
 			result=true;	
 		}else{
 			result=false;
@@ -235,6 +238,7 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 				result=false;
 				break;
 			}
+			
 			result=result && result2;
 			
 			if(result){
@@ -246,11 +250,16 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 					if( this.state!=2){   //第一次触发,所有条件都满足；
 						this.state=2;
 						this.triggerTime=new Date();
+					}else if(this.state==2){ //再次触发，判断这次触发和上次的时间差
+						long timeDiff =(new Date().getTime()-this.triggerTime.getTime())/1000;
+						if(timeDiff<=600){   //不足10分钟 则跳出；
+							break;
+						}
 					}
 					if(this.getAccumilateTime()==0){
-						return this.getProfileTemplateID();								
+						return this.getTriggerTemplateID();								
 					}else if(System.currentTimeMillis()-this.triggerTime.getTime()>=this.getAccumilateTime()){ //累计时间满足
-						return this.getProfileTemplateID();
+						return this.getTriggerTemplateID();
 					}
 				}else{
 					continue;
@@ -286,7 +295,7 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 				continue;
 			}			
 		}		
-		return this.getProfileTemplateID();	 
+		return -1;	 
 	}	
 	
 	public Boolean isDataSatisfied(){
@@ -386,7 +395,24 @@ public class RunTimeTriggerTemplate extends TriggerTemplate{
 		return foo;
 	}
 	
-	public static void main(String[] args) {		
+	public static void main(String[] args) {
+		SystemConfig config= SystemConfig.getConf();
+	
+		/*TriggerTemplateMap triggerMap = new TriggerTemplateMap(config.getMysql());
+		System.out.println(triggerMap.size());
+		
+		
+		RunTimeTriggerTemplate r=new RunTimeTriggerTemplate(triggerMap.get(1), new Date(), 0, 0);
+		Profile a = r.getCurrentProfile(1256783, 101);
+		System.out.println(a.toJsonObj().toString());*/
+		
+		Jedis jedis=config.getJedis();
+		System.out.println(new Date());
+		for (int i = 0; i < 10000; i++) {
+			//jedis.hget("1256785_currentProfile", "101");
+			jedis.hget("87654321_currentProfile", "101");
+		}
+		System.out.println(new Date());
 
 	}
 

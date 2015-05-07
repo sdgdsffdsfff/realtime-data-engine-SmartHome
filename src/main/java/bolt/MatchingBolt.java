@@ -1,10 +1,9 @@
 package bolt;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import redis.clients.jedis.Jedis;
-import trigger.EmbededTriggerMap;
+
+import trigger.RuntimeTriggerMap;
 import trigger.RunTimeTrigger;
 import util.SystemConfig;
 import backtype.storm.task.OutputCollector;
@@ -24,7 +23,7 @@ import cooxm.devicecontrol.device.*;
 public class MatchingBolt  implements IRichBolt {
 	
 	OutputCollector _collector;
-	private static EmbededTriggerMap embededTriggerMap=null;
+	private static RuntimeTriggerMap runtimeTriggerMap=null;
 	//Jedis jedis;
 	
 	
@@ -36,7 +35,7 @@ public class MatchingBolt  implements IRichBolt {
 		this._collector=collector;
 		SystemConfig config= SystemConfig.getConf();
 		TriggerMap triggerMap = new TriggerMap(config.getMysql());
-		embededTriggerMap=new EmbededTriggerMap(triggerMap);	
+		runtimeTriggerMap=new RuntimeTriggerMap(triggerMap);	
 		//this.jedis=config.getJedis();
 	}
 
@@ -49,7 +48,7 @@ public class MatchingBolt  implements IRichBolt {
 		List<Object> line=input.getValues();
 		List<String> fields=input.getFields().toList();
 		int ctrolID=Integer.parseInt((String) line.get(fields.indexOf("ctrolID")));
-		Map<Integer, RunTimeTrigger>  triggerList=embededTriggerMap.get(ctrolID);
+		Map<Integer, RunTimeTrigger>  triggerList=runtimeTriggerMap.get(ctrolID);
 		//Map<Integer, RunTimeTrigger> triggerList=jedis.hgetAll("1256788_currentProfile");		
 		if(triggerList==null){
 			return;
