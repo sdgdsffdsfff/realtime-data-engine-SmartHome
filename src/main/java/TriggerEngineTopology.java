@@ -23,9 +23,9 @@ public class TriggerEngineTopology {
 
     //builder.setSpout("spout", new SocketSpout(), 2);
     builder.setSpout("spout", new FileSpout(), 1);
-    //builder.setBolt("getState",new HouseStateBolt(),2).fieldsGrouping("spout", new Fields("ctrolID"));
-    builder.setBolt("match", new MatchingBolt2(),  4).fieldsGrouping("spout", new Fields("ctrolID"));
-    builder.setBolt("trigger", new ReactBolt(), 1).fieldsGrouping("match", new Fields("ctrolID"));
+    builder.setBolt("getState",new HouseStateBolt(),1).fieldsGrouping("spout", new Fields("ctrolID"));
+    //builder.setBolt("match", new MatchingBolt2(),  4).fieldsGrouping("spout", new Fields("ctrolID"));
+    //builder.setBolt("trigger", new ReactBolt(), 1).fieldsGrouping("match", new Fields("ctrolID"));
 
 
     Config conf = new Config();
@@ -37,10 +37,11 @@ public class TriggerEngineTopology {
       StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
     }
     else {
-      conf.setMaxTaskParallelism(12);
+      conf.setMaxTaskParallelism(5);
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("trigger-engine", conf, builder.createTopology());
-      //Thread.sleep(1000000);
+      
+      //Thread.sleep(20000);
       //cluster.shutdown();
     }
   }

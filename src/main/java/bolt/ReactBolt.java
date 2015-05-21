@@ -1,6 +1,7 @@
 package bolt;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.List;
@@ -22,6 +23,7 @@ import cooxm.devicecontrol.socket.SocketClient;
 import cooxm.devicecontrol.util.MySqlClass;
 import redis.clients.jedis.Jedis;
 import trigger.RunTimeTrigger;
+import trigger.RuntimeTriggerTemplateReact;
 import util.SystemConfig;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -53,37 +55,31 @@ public class ReactBolt implements IRichBolt{
 		this.jedis=config.getJedis();
 		this.mysql=config.getMysql();
 		
-		this.IP=config.getProperty("device_server_IP", "172.16.35.173");
+		this.IP=config.getValue("device_server_IP");//config.getProperty("device_server_IP", "172.16.35.173");
 		this.port =Integer.parseInt(config.getProperty("device_server_port","20190"));
-		this.clusterID=1;
-		this.serverID=5;
+		this.clusterID=Integer.parseInt(config.getValue("cluster_id"));
+		this.serverID=Integer.parseInt(config.getValue("server_id"));
 		this.serverType=200;	
+         
 		
-		try {
-			deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType );
-			deviceControlServer.sendAuth(1,5,200);	
-			Message msg=CtrolSocketServer.readFromClient(deviceControlServer.sock);
-			if(msg!=null && msg.getJson()!=null && msg.getJson().optInt("errorCode")==0){
-				log.info("#------------    Success connect to "+this.IP+":" +this.port +"         -------------------#");
-			}else{
-				log.info("#------------    Failed to connect  "+this.IP+":" +this.port +"   -------------------#");
-			}
-		} catch (IOException e) {
-			log.error(e);
-		}
+		deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType ,false);
+		new Thread( this.deviceControlServer).start();
+		//log.info("Successfull connect to msg Server: "+this.IP+":"+this.port);
+		//deviceControlServer.sendAuth(1,5,200);	
+//		Message msg=CtrolSocketServer.readFromClient(deviceControlServer.sock);
+//		System.out.println(msg.toString());
+//		if(msg!=null && msg.getJson()!=null && msg.getJson().optInt("errorCode")==0){
+//			log.warn("\n#------------    Success connect to "+this.IP+":" +this.port +"         -------------------#\n");
+//		}else{
+//			log.warn("\n#------------    Failed to connect  "+this.IP+":" +this.port +"         -------------------#\n");
+//		}
 	}
 
 	@Override
 	public void execute(Tuple input) {
 		if(deviceControlServer==null){
-			try {
-				deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType );
-				deviceControlServer.sendAuth(1,6,201);
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}	
+			deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType,false );
+			deviceControlServer.sendAuth(this.clusterID,this.serverID,this.serverType);	
 		}
 
 		List<Object> line=input.getValues();
@@ -101,10 +97,11 @@ public class ReactBolt implements IRichBolt{
 			return;
 		}
 		for(TriggerTemplateReact react: templateReact){
-			Message msg=react.react(this.mysql, jedis, ctrolID, roomID);
-			if(msg!=null){
+			RuntimeTriggerTemplateReact rReact=new RuntimeTriggerTemplateReact(react);
+			Message msg=rReact.react(this.mysql, jedis, ctrolID, roomID);
+			System.out.println("ReactBolt: Congrats!! rule has been triggerd,ctrolID="+ctrolID+",TriggerID="+triggerid+",command="+Integer.toHexString(msg.getCommandID())+"\n");
+			if(msg!=null && deviceControlServer.sock!=null){
 				msg.writeBytesToSock2(deviceControlServer.sock);
-				System.out.println("Congrats!! rule has been triggerd,ctrolID="+ctrolID+",TriggerID="+triggerid+",command="+Integer.toHexString(msg.getCommandID()));
 			}
 			
 		}		
@@ -125,10 +122,11 @@ public class ReactBolt implements IRichBolt{
 	
 	
 	public static void main(String[] args) throws UnknownHostException, IOException {
-		SocketClient sock=new SocketClient("172.16.35.67",20190,1,5,200);
-		sock.sendAuth(1,5,200);
+		SocketClient sock=new SocketClient("172.16.35.173",20190,1,5,200,false);
+		//sock.sendAuth(1,5,200);
 		new Thread((Runnable) sock).start();
-		
+		Message a=CtrolSocketServer.readFromClient(sock.sock);
+		System.out.println(a);
 //		try {
 //			Thread.sleep(1000*1000);
 //		} catch (InterruptedException e) {

@@ -37,7 +37,7 @@ public class FileSpout extends BaseRichSpout{
 		this._collector=collector;
 		this.xml=new PraseXmlUtil();
 		try {
-			fileReader = new BufferedReader(new FileReader(new File("data.txt")));
+			fileReader = new BufferedReader(new FileReader(new File("data1.txt")));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -45,12 +45,12 @@ public class FileSpout extends BaseRichSpout{
 
 	@Override
 	public void nextTuple() {
-		Utils.sleep(1000);
+		Utils.sleep(100);
 		String data=null;
 		try {
 			if((data=fileReader.readLine())!=null){	
 				String[] columns=data.split(",");	
-				String[] values=new String[columns.length];
+				/*String[] values=new String[columns.length];
 				this.fields=xml.getColumnNames(Integer.parseInt(columns[0]));
 				if(this.fields!=null){
 					values[0]=columns[this.fields.indexOf("factorID")];
@@ -61,10 +61,14 @@ public class FileSpout extends BaseRichSpout{
 					values[5]=columns[this.fields.indexOf("roomID")];
 					values[6]=columns[this.fields.indexOf("wallID")];
 					values[7]=columns[this.fields.indexOf("value")];					
-					values[8]=columns[this.fields.indexOf("rate")];
+					values[8]=columns[this.fields.indexOf("rate")];*/
+				if(columns.length!=9){
+					System.err.println("Wrong data:"+data);
+				}
 					
 					_collector.emit( new Values( columns)/*,new Values(ctrolID)*/);	
-				}
+					//System.out.println(data);
+				//}
 				
 			}
 		} catch (FileNotFoundException e) {

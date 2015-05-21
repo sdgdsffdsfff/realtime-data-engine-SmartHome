@@ -74,7 +74,8 @@ public class MatchingBolt2  implements IRichBolt {
 			matchedTriggerID=runTrigger.dataMatching(line, fields,jedis);
 			if(matchedTriggerID!=-1){
 				//System.out.println("\n \t\t---------  matched: ctrolID="+ctrolID+",TriggerID"+matchedTriggerID);
-				_collector.emit(new Values(ctrolID,roomID,matchedTriggerID));				
+				_collector.emit(new Values(ctrolID,roomID,matchedTriggerID));
+				System.out.println("MatingBolt:Congrats!! rule has been triggerd,ctrolID="+ctrolID+",roomID="+roomID+",TriggerID="+matchedTriggerID);				
 			}
 		}			
 	}

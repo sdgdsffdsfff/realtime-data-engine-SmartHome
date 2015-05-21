@@ -298,7 +298,7 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 		return -1;	 
 	}	
 	
-	public Boolean isDataSatisfied(){
+/*	public Boolean isDataSatisfied(){
 		Boolean result=true;
 		Boolean orResult=null;
 		for(TriggerTemplateFactor factor:this.getTriggerTemplateFactorList()){		
@@ -322,7 +322,32 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 		}else{
 			return result && orResult;
 		}	
-
+	}*/
+	
+	public Boolean isDataSatisfied(){
+		Boolean result=true;
+		Boolean orResult=null;
+		for(TriggerTemplateFactor factor:this.getTriggerTemplateFactorList()){		
+			String logicSign=factor.getLogicalRelation();
+			if(logicSign.equalsIgnoreCase("and")){
+				result=result && factor.getState();
+				if(!result){
+					return false;
+				}
+			}else if(logicSign.equalsIgnoreCase("or")){
+				orResult=intToBoolean(getState()) || (Boolean)orResult ;		
+			}else{
+				log.error("Unknown Logical sign in Database"
+						+" triggerID:"+this.getTriggerTemplateID()
+						+" factorID:"+factor.getFactorID());
+				return false;
+			}			
+		}	
+		if(orResult==null){  //没有or的因素
+			return result;
+		}else{
+			return result && orResult;
+		}	
 	}
 	
 	public int getAccumilateTime(){
