@@ -1,11 +1,8 @@
-package bolt;
+package cooxm.bolt;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import trigger.RuntimeTriggerMap;
-import trigger.RunTimeTrigger;
-import util.SystemConfig;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
@@ -14,6 +11,9 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import cooxm.devicecontrol.device.*;
+import cooxm.trigger.RunTimeTrigger;
+import cooxm.trigger.RuntimeTriggerMap;
+import cooxm.util.SystemConfig;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -36,7 +36,7 @@ public class MatchingBolt  implements IRichBolt {
 		SystemConfig config= SystemConfig.getConf();
 		TriggerMap triggerMap = new TriggerMap(config.getMysql());
 		runtimeTriggerMap=new RuntimeTriggerMap(triggerMap);	
-		//this.jedis=config.getJedis();
+		//this.jedis=config.getJedis(); this.jedis.select(9);
 	}
 
 	@Override
@@ -49,7 +49,6 @@ public class MatchingBolt  implements IRichBolt {
 		List<String> fields=input.getFields().toList();
 		int ctrolID=Integer.parseInt((String) line.get(fields.indexOf("ctrolID")));
 		Map<Integer, RunTimeTrigger>  triggerList=runtimeTriggerMap.get(ctrolID);
-		//Map<Integer, RunTimeTrigger> triggerList=jedis.hgetAll("1256788_currentProfile");		
 		if(triggerList==null){
 			return;
 		}

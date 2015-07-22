@@ -1,4 +1,4 @@
-package trigger;
+package cooxm.trigger;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -15,9 +15,10 @@ import org.json.JSONObject;
 
 import clojure.lang.Compiler.NewExpr;
 import redis.clients.jedis.Jedis;
-import util.SystemConfig;
+import cooxm.devicecontrol.control.LogicControl;
 import cooxm.devicecontrol.device.Trigger;
 import cooxm.devicecontrol.device.TriggerFactor;
+import cooxm.util.SystemConfig;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -62,7 +63,7 @@ public class RunTimeTrigger extends Trigger{
 		super(trigger);
 		SystemConfig config= SystemConfig.getConf();
 		this.jedis=config.getJedis();
-
+		this.jedis.select(9);
 		this.triggerTime = triggerTime;
 		this.state = state;
 		this.timeOut=timeOut;
@@ -265,7 +266,7 @@ public class RunTimeTrigger extends Trigger{
 					c.setTime(new Date(System.currentTimeMillis()));
 					value = c.get(Calendar.DAY_OF_WEEK);	
 				case 3021:  //当前情景模式
-					String key=ctrolID+"_currentProfile";
+					String key=LogicControl.currentProfile+ctrolID;
 					String profileStr=this.jedis.hget(key, roomID+"");
 					if(profileStr==null){
 						continue ;

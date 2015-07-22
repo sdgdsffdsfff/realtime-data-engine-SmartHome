@@ -1,4 +1,4 @@
-package state;
+package cooxm.state;
 
 import java.util.HashMap;
 import java.util.List;

@@ -1,35 +1,28 @@
-package bolt;
+package cooxm.bolt;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Date;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
 
-import cooxm.devicecontrol.control.Configure;
-import cooxm.devicecontrol.control.LogicControl;
-import cooxm.devicecontrol.device.DeviceState;
 import cooxm.devicecontrol.device.TriggerTemplate;
-import cooxm.devicecontrol.device.TriggerTemplateMap;
 import cooxm.devicecontrol.device.TriggerTemplateReact;
-import cooxm.devicecontrol.device.Warn;
 import cooxm.devicecontrol.socket.CtrolSocketServer;
-import cooxm.devicecontrol.socket.Header;
 import cooxm.devicecontrol.socket.Message;
 import cooxm.devicecontrol.socket.SocketClient;
 import cooxm.devicecontrol.util.MySqlClass;
+import cooxm.trigger.RuntimeTriggerTemplateReact;
+import cooxm.util.SystemConfig;
 import redis.clients.jedis.Jedis;
-import trigger.RunTimeTrigger;
-import trigger.RuntimeTriggerTemplateReact;
-import util.SystemConfig;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -37,6 +30,7 @@ import backtype.storm.tuple.Tuple;
  */
 
 public class ReactBolt implements IRichBolt{
+	OutputCollector _collector;
 	static Logger log =Logger.getLogger(ReactBolt.class);
 	private Jedis jedis;
 	MySqlClass mysql;
@@ -51,8 +45,10 @@ public class ReactBolt implements IRichBolt{
 	@Override
 	public void prepare(Map stormConf, TopologyContext context,
 			OutputCollector collector) {
+		this._collector=collector;
 		SystemConfig config=SystemConfig.getConf();	
 		this.jedis=config.getJedis();
+		this.jedis.select(9);
 		this.mysql=config.getMysql();
 		
 		this.IP=config.getValue("device_server_IP");//config.getProperty("device_server_IP", "172.16.35.173");
@@ -63,7 +59,9 @@ public class ReactBolt implements IRichBolt{
          
 		
 		deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType ,false);
-		new Thread( this.deviceControlServer).start();
+		Thread controlServerThread = new Thread( this.deviceControlServer);
+		controlServerThread.setName("controlServerThread");
+		controlServerThread.start();
 		//log.info("Successfull connect to msg Server: "+this.IP+":"+this.port);
 		//deviceControlServer.sendAuth(1,5,200);	
 //		Message msg=CtrolSocketServer.readFromClient(deviceControlServer.sock);
@@ -98,13 +96,21 @@ public class ReactBolt implements IRichBolt{
 		}
 		for(TriggerTemplateReact react: templateReact){
 			RuntimeTriggerTemplateReact rReact=new RuntimeTriggerTemplateReact(react);
-			Message msg=rReact.react(this.mysql, jedis, ctrolID, roomID);
-			System.out.println("ReactBolt: Congrats!! rule has been triggerd,ctrolID="+ctrolID+",TriggerID="+triggerid+",command="+Integer.toHexString(msg.getCommandID())+"\n");
+			Message msg=null;
+			try {
+				msg = rReact.react(this.mysql, jedis, ctrolID, roomID);
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}			
 			if(msg!=null && deviceControlServer.sock!=null){
+				log.info("command has been send,ctrolID="+ctrolID+",TriggerID="+triggerid
+						+",triggerName="+tg.getTriggerName()+",commandID="+Integer.toHexString(msg.getCommandID())+",msg:"+msg.toString());
 				msg.writeBytesToSock2(deviceControlServer.sock);
 			}
 			
-		}		
+		}
+		System.out.println("\n");
+		this._collector.emit(new Values("react"));
 	}
 
 	@Override

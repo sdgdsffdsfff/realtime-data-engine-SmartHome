@@ -1,4 +1,4 @@
-package util;
+package cooxm.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

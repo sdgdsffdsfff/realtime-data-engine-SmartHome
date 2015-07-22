@@ -1,9 +1,7 @@
-package state;
+package cooxm.state;
 
 import java.sql.SQLException;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,11 +9,13 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import redis.clients.jedis.Jedis;
 import cooxm.devicecontrol.control.Configure;
-import cooxm.devicecontrol.device.Factor;
-import cooxm.devicecontrol.device.FactorTemplate;
+import cooxm.devicecontrol.control.LogicControl;
+import cooxm.devicecontrol.device.EnviromentState;
 import cooxm.devicecontrol.device.Profile;
 import cooxm.devicecontrol.device.ProfileTemplate;
+import cooxm.devicecontrol.device.State;
 import cooxm.devicecontrol.util.MySqlClass;
+import cooxm.util.SystemConfig;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -23,6 +23,9 @@ import cooxm.devicecontrol.util.MySqlClass;
  */
 
 public class HouseStateMap {
+	
+	MySqlClass mysql;
+	LevelMap levelMap;
 	
 
 	
@@ -59,6 +62,9 @@ public class HouseStateMap {
 	public HouseStateMap(){
 		stateMap = new HashMap<Integer, HouseState>();
 		avgStateMap = new HashMap<Integer, HashMap<Integer,  String>>();
+		SystemConfig confg=SystemConfig.getConf();
+		this.mysql=confg.getMysql();
+		this.levelMap=new LevelMap(mysql);
 		
 	}
 	
@@ -180,6 +186,7 @@ public class HouseStateMap {
 			HashMap<Integer, String> roomAvgMap= new HashMap<Integer, String>();  //HashMap<roomID, StateString>
 			for (HashMap.Entry<Integer, HashMap<Integer, ArrayBlockingQueue<Integer>>> entry2 : entry1.getValue().entrySet()) {
 				HashMap<Integer, Double> factorAvgMap=null;
+				factorAvgMap=new HashMap<Integer, Double> ();
 				for (Map.Entry<Integer, ArrayBlockingQueue<Integer>> entry3 : entry2.getValue().entrySet()){
 					int sum=0;
 					int count=entry3.getValue().size();
@@ -191,11 +198,17 @@ public class HouseStateMap {
 					if(entry2.getKey()==2503){
 						factorAvg=entry3.getValue().peek();
 					}
-					factorAvgMap=new HashMap<Integer, Double> ();
+
 					factorAvgMap.put(entry3.getKey(), factorAvg);
-				}			
-				averageHouseStateString=getAverageHouseStateString(factorAvgMap);
-				roomAvgMap.put(entry2.getKey(), averageHouseStateString);
+				}	
+				// 2015-06-01 UK 要求改为json格式
+				//averageHouseStateString=getAverageHouseStateString(factorAvgMap);
+				EnviromentState e = getAverageEnviromentState(factorAvgMap);
+				if(e!=null){
+					averageHouseStateString=e.toJson().toString();
+					//System.out.println(averageHouseStateString  +"--------------------------------------");
+					roomAvgMap.put(entry2.getKey(), averageHouseStateString);
+				}
 			}	
 			avgStateMap.put(entry1.getKey(), roomAvgMap);	
 		}
@@ -280,6 +293,77 @@ public class HouseStateMap {
 		}
 		return avgArrayString.substring(0, avgArrayString.length()-1);
 	}
+	
+	public EnviromentState getAverageEnviromentState(HashMap<Integer, Double> roomAvgMap){
+		DecimalFormat df = new DecimalFormat("#.00");
+
+		/*数组保存依次是：
+		2501	光强度
+		2502	PM2.5-中控上
+		2503	人体红外探测器
+		2504	湿度
+		2505	温度
+		2506	声音
+		2507	空气质量-6合一传感器
+		1201	烟雾探测器-一氧化碳
+		1301	漏水探测器
+		*/
+		EnviromentState es=new EnviromentState();
+		for  (HashMap.Entry<Integer, Double> entry: roomAvgMap.entrySet()){
+			double value=entry.getValue();
+			State state=new State(-1,-1);
+			int level;
+			switch (entry.getKey()) {
+			//2015-05-04 richard 重新定义
+			case 2501: //光
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(entry.getValue(),level);
+				es.setLux(state);
+				break;
+			case 2502: //PM2.5
+				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
+                state=new State(value/100.0,level);
+				es.setPm25(state);
+				break;
+//			case 2503: //人体探测器
+				//state=new State(-1,-1);
+//				avgArray[2]=entry.getValue();
+//				break;
+			case 2504:  //湿度
+				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
+                state=new State(value/100.0,level);              	
+                es.setMoisture(state);
+				break;
+			case 2505:  //温度
+				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
+                state=new State(value/100.0,level);
+				es.setTemprature(state);
+				break;
+			case 2506:  //噪音 
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(entry.getValue(),level);
+				es.setNoise(state);
+				break;
+			case 2507:  // 空气质量-6合1
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(value/100.0,level);
+				es.setHarmfulGas(state);
+				break; 
+//			case 201:  //烟雾探测器-一氧化碳
+//				es.setPm25(state);
+//				break;
+//			case 211:  //漏水探测器
+//				es.setPm25(state);
+//				break;
+			default:
+				//es=null;
+				break; 
+		   }
+	   }
+       return es;
+       
+	}
+
 
 	
 
@@ -289,17 +373,18 @@ public class HouseStateMap {
 		String redis_ip         =cf.getValue("redis_ip");
 		int redis_port       	=Integer.parseInt(cf.getValue("redis_port"));
 		Jedis jedis=new Jedis(redis_ip, redis_port,500);
+		jedis.select(9);
 		
-		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "root", "cooxm");
-		List<ProfileTemplate> ptempList=ProfileTemplate.getAllFromDB(mysql);
+		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "cooxm", "cooxm");
+		Map<Integer,ProfileTemplate> ptempList=ProfileTemplate.getAllFromDB(mysql);
 //		ProfileTemplate a = ptempList.get(0);
 //		FactorTemplate b = ptempList.get(0).getFactorTemplateTempList().get(0);
 		
-		int[] ids={1256788,1256789};
+		int[] ids={40008,1256789};
 		for (int i = 2; i <3; i++) {
 			for (int j = 0; j < ids.length; j++) {
 				Profile p=new Profile(ptempList.get(i), ids[j]);
-				jedis.hset(p.getCtrolID()+"_currentProfile",p.getRoomID()+"", p.toJsonObj().toString());
+				jedis.hset(LogicControl.currentProfile+p.getCtrolID(),p.getRoomID()+"", p.toJsonObj().toString());
 			}
 		} 
 		System.out.println("success");

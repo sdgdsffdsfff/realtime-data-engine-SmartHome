@@ -1,7 +1,9 @@
-package util;
+package cooxm.util;
 
 import ch.qos.logback.classic.db.names.ColumnName;
 import cooxm.devicecontrol.device.FactorDict;
+import cooxm.devicecontrol.device.TriggerTemplate;
+import cooxm.trigger.RunTimeTriggerTemplate;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -42,7 +44,12 @@ public class Column extends FactorDict {
 		this.columnID = columnID;
 	}
 	public static void main(String[] args) {
+		
+		RunTimeTriggerTemplate x1=new RunTimeTriggerTemplate() ;
+		TriggerTemplate  x2= new TriggerTemplate() ;
 
+		Class c1=x1.getClass();
+		Class c2=x2.getClass();
 	}
 
 }

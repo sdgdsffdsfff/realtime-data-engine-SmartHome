@@ -1,15 +1,16 @@
-package trigger;
+package cooxm.trigger;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Predicate;
-import util.GeneralMethod;
-import util.SystemConfig;
+
 import cooxm.devicecontrol.device.Trigger;
 import cooxm.devicecontrol.device.TriggerFactor;
 import cooxm.devicecontrol.device.TriggerMap;
 import cooxm.devicecontrol.util.BytesUtil;
 import cooxm.devicecontrol.util.MySqlClass;
+import cooxm.util.GeneralMethod;
+import cooxm.util.SystemConfig;
 
 /*
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -66,7 +67,7 @@ public class RuntimeTriggerMap extends HashMap<Integer, HashMap<Integer,RunTimeT
 
 
 	public static void main(String[] args) {
-		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "root", "cooxm");
+		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "cooxm", "cooxm");
 		TriggerMap rm=new TriggerMap(mysql);
 		RuntimeTriggerMap dm=new RuntimeTriggerMap(rm);
 		System.out.println(dm.size());

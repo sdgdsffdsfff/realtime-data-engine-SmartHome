@@ -1,6 +1,7 @@
-package trigger;
+package cooxm.trigger;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -19,13 +20,16 @@ import org.json.JSONObject;
 
 import clojure.lang.Compiler.NewExpr;
 import redis.clients.jedis.Jedis;
-import util.SystemConfig;
+import cooxm.devicecontrol.control.LogicControl;
+import cooxm.devicecontrol.device.Device;
 import cooxm.devicecontrol.device.Profile;
+import cooxm.devicecontrol.device.State;
 import cooxm.devicecontrol.device.Trigger;
 import cooxm.devicecontrol.device.TriggerFactor;
 import cooxm.devicecontrol.device.TriggerTemplate;
 import cooxm.devicecontrol.device.TriggerTemplateFactor;
 import cooxm.devicecontrol.device.TriggerTemplateMap;
+import cooxm.util.SystemConfig;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -36,6 +40,7 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 	 public static Logger log= Logger.getLogger(RunTimeTriggerTemplate.class);
 	 private static final int boundary= 3000;
 	 Map<String,Thread> taskMap;
+	 private static final String lastTriggerTime="lastTriggerTime:"; //在redis 记录这条规则最后一次触发的时间
 	 
 	 //Jedis jedis;
 	/**所有因素都满足的触发时间，初始值：1970-01-01 00：00:00 */
@@ -43,7 +48,9 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 	/**<pre>状态：
 	 * 0:没有一个因素命中；
 	 * 1：所有因素没有完全命中；
-	 * 2；所有因素全部命中；  */
+	 * 2；所有因素全部命中； 
+	 * 11：这个规则之前触发过，这次所有因素部分命中
+	 * 22： 这个规则之前触发过，这次所有因素全部命中*/
 	private int  state;	
 	/** 超时未触发，则已经满足条件的因素失效 */
 	private int timeOut;
@@ -70,7 +77,7 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 	public RunTimeTriggerTemplate(TriggerTemplate trigger, Date triggerTime, int state,int timeOut) {
 		super(trigger);
 		//SystemConfig config= SystemConfig.getConf();
-		//this.jedis=config.getJedis();
+		//this.jedis=config.getJedis();this.jedis.select(9);
 		
 		this.taskMap=new HashMap<String, Thread>();
 
@@ -80,11 +87,14 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 	}
 	
 	
+	public RunTimeTriggerTemplate() {
+	}
 	public  Profile getCurrentProfile(int ctrolID,int roomID,Jedis jedis){
-		String key=ctrolID+"_currentProfile";
+		String key=LogicControl.currentProfile+ctrolID;
+		jedis.select(9);
 		String p=jedis.hget(key, roomID+"");
 		if(p==null || p==""){
-			log.error("profileTemplate not exist  in redis currentProfile,ctrolID="+ctrolID+",roomID="+roomID);
+			log.error(key+" not exist  in redis ,ctrolID="+ctrolID+",roomID="+roomID);
 			return null;
 		}
 		JSONObject json;
@@ -94,8 +104,31 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 			return profile;
 		} catch (JSONException e) {
 			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
 		}
 		return null;
+	}
+	
+	/** 从redis获取trigger 的开关，如果获取不到 则默认开关打开
+     */
+	public  int getTriggerSwitch(int ctrolID,int triggerID,Jedis jedis){
+		String key=LogicControl.currentProfile+ctrolID;
+		jedis.select(9);
+		String p=jedis.hget(key, triggerID+"");
+		if(p==null || p==""){   //默认都是打开的
+			return 1;
+		}else{
+			JSONObject json;
+			try {
+				json = new JSONObject(p);
+				int validFlag=json.getInt("validFlag");
+				return validFlag;
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		return 1;		
 	}
 
 	
@@ -128,51 +161,80 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 		Boolean result=null;
 		
 		int factorID=Integer.parseInt( (String) dataLine.get(0));
-		int value=Integer.parseInt( (String) dataLine.get(fields.indexOf("value"))); 
+		int valueInt=Integer.parseInt( (String) dataLine.get(fields.indexOf("value"))); 
 		int ctrolID=Integer.parseInt( (String) dataLine.get(fields.indexOf("ctrolID"))); 
 		if(!fields.contains("roomType") || !fields.contains("roomID")){
 			return -1;
 		}
 		int roomID=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomID"))); 
 		int roomType=Integer.parseInt( (String) dataLine.get(fields.indexOf("roomType")));
-		
-		
-		Profile p=getCurrentProfile(ctrolID, roomID,jedis);
-		if(p==null){
-			log.error("can't get current profile for ctrolID :"+ctrolID+",roomID="+roomID);
-			return -1;
-		}
-		//System.out.println("ctrolID"+",roomID="+roomID+",Currntprofile="+p.getProfileID()+",模板="+p.getProfileTemplateID());
-		
-		//第1个条件：当前的情景模式满足	
-		int profileTemplateID=this.getProfileTemplateID();
-		if( profileTemplateID==254 ){  
-			result=true;		
-		}else if(p.getProfileTemplateID()==profileTemplateID ){
-			result=true;	
-		}else{
-			result=false;
-			return -1;
+		double value=valueInt;
+		switch (factorID) {
+		//2015-05-04 richard 重新定义
+		case 2502: //PM2.5
+			//value=valueInt/100.0;
+			break;
+		case 2504:  //湿度
+			value=valueInt/100.0;
+			break;
+		case 2505:  //温度
+			value=valueInt/100.0;
+			break;
+		case 2506:  //噪音 
+			value=valueInt;
+			break;
+		default:
+			value=valueInt;
+			break; 
 		}
 		
 		for(TriggerTemplateFactor factor:this.getTriggerTemplateFactorList()){
 			
-			if(factorID<boundary){  //数据因素匹配					
-	            //第2个条件：因素ID相同	，并且云智能打开	
-				int validflag;
-				if(p.getFactor(factorID)==null){
-					//log.warn("can't get factor from its currentProfile,CtrolID="+ctrolID+",profileID="+p.getProfileID()
-						//	+",factorID="+factorID+".Set validFlag to default value 1");
-					validflag=1;
-				}else{
-					validflag=p.getFactor(factorID).getValidFlag();
-				}
-				if(factor.getFactorID()==factorID  && validflag==1){
+			if(factorID<boundary){  //数据因素匹配	
+				//第1个条件：factorID相同
+				if(factor.getFactorID()==factorID ){
 					result=true;
 				}else{
-					result=false;
 					continue;
 				}
+				
+				//第2个条件：设置中规则打开，且挡前运行的情景模式 和 触发规则 的模式相同；
+				Profile p=getCurrentProfile(ctrolID, roomID,jedis);
+				if(this.getIsAbstract()==1){               //高级设置选项
+					int tSwitch= getTriggerSwitch(ctrolID, this.getTriggerTemplateID(), jedis);
+					if(tSwitch==1){                     //规则打开
+						result= true;
+					}else{
+						result=false;                     //规则关闭
+						continue;
+					}
+				}else if(this.getIsAbstract()==0){         //隐藏在profile 设置里
+					int profileTemplateID=this.getProfileTemplateID();
+					
+					if( profileTemplateID==254 ){  //任意情景模式都生效
+						result=true;		
+					}else if(p!=null && p.getProfileTemplateID()==profileTemplateID ){ //情景存在，且当前的情景模板ID和 触发规则的生效情景相同
+						//result=true;	
+			            //第3个条件：并且云智能打开	
+						int validflag;
+						if(p.getFactor(factorID)==null){
+							validflag=1;
+						}else{
+							validflag=p.getFactor(factorID).getValidFlag();
+						}
+						if( validflag==1){
+							result=true;
+						}else{
+							result=false;
+							continue;
+						}
+					}else{   // p=null && profileTemplateID!=254
+						result=false;
+						continue;
+					}			 
+				}
+				
+
 				
 				
 				//第3个条件：roomType满足	
@@ -196,7 +258,8 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 				case 3003:  //星期几
 					Calendar c = Calendar.getInstance();
 					c.setTime(new Date(System.currentTimeMillis()));
-					value = c.get(Calendar.DAY_OF_WEEK);							
+					value = c.get(Calendar.DAY_OF_WEEK);
+					break;
 				default:
 					break;
 				}				
@@ -234,6 +297,18 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 			case 8:  //<小于
 				result2=(value<min)?true:false;
 				break;
+			case 9:  // 介于开区间
+				result2=(value>min && value<max)?true:false;
+				break;
+			case 10:  //介于左闭又开
+				result2=(value>=min && value<max)?true:false;
+				break;
+			case 11:  //介于左开右闭
+				result2=(value>min && value<=max)?true:false;
+				break;
+			case 12:  // 逻辑运算
+				result2=(min==value)?true:false;
+				break;
 			default:
 				result=false;
 				break;
@@ -244,16 +319,35 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 			if(result){
 				factor.setState(true);
 				factor.setCreateTime(new Date());  //因素触发时间
-				this.state=1;      //已有条件满足，但是不是所有条件都满足；
+				if(this.state==2 ||this.state==22){   //这一条规则之前触发过，这一次又有一条因素满足条件
+					this.state=11;      //这个规则之前触发过，这一次已有条件满足，但是不是所有条件都满足；
+				}else{
+					this.state=1;    //第一次触发，但是不是所有条件都满足；
+				}
 				/*---------------------------------------- 非定时器任务 -----------------------------------*/
 				if(isDataSatisfied()){  //先判所有断数据条件是否满足要求
-					if( this.state!=2){   //第一次触发,所有条件都满足；
+					if( this.state==1  ){   //第一次触发,所有条件都满足；
 						this.state=2;
 						this.triggerTime=new Date();
-					}else if(this.state==2){ //再次触发，判断这次触发和上次的时间差
+						//jedis.hset(lastTriggerTime+ctrolID, this.getTriggerTemplateID()+"", this.triggerTime.getTime()+"");
+					}else if( this.state==11){
+						this.state=22;						
+					} 
+					/*long lastTriTime=Long.parseLong(jedis.hget(lastTriggerTime+ctrolID, this.getTriggerTemplateID()+""));
+					long timeDiff =(new Date().getTime()-lastTriTime)/1000;
+					if(timeDiff<=30*60){   //不足30分钟 则跳出；
+						break;
+					}else{                 //距离上次触发超过30分钟
+						this.triggerTime=new Date();
+						jedis.hset(lastTriggerTime+ctrolID, this.getTriggerTemplateID()+"", this.triggerTime.getTime()+"");
+					}*/
+					
+					if(this.state==22 ){ //再次触发，判断这次触发和上次的时间差
 						long timeDiff =(new Date().getTime()-this.triggerTime.getTime())/1000;
-						if(timeDiff<=600){   //不足10分钟 则跳出；
+						if(timeDiff<=15*60){   //不足20分钟 则跳出；
 							break;
+						}else{                 //距离上次触发超过30分钟
+							this.triggerTime=new Date();
 						}
 					}
 					if(this.getAccumilateTime()==0){
@@ -330,7 +424,12 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 		for(TriggerTemplateFactor factor:this.getTriggerTemplateFactorList()){		
 			String logicSign=factor.getLogicalRelation();
 			if(logicSign.equalsIgnoreCase("and")){
-				result=result && factor.getState();
+				if(factor.getState()!=null){
+					result=result && factor.getState();
+				}else{
+					result=result && false;
+				}
+
 				if(!result){
 					return false;
 				}
@@ -420,7 +519,7 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 		return foo;
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args)  {
 		SystemConfig config= SystemConfig.getConf();
 	
 		/*TriggerTemplateMap triggerMap = new TriggerTemplateMap(config.getMysql());
@@ -432,13 +531,15 @@ public class RunTimeTriggerTemplate  extends TriggerTemplate{
 		System.out.println(a.toJsonObj().toString());*/
 		
 		Jedis jedis=config.getJedis();
+		jedis.select(9);
 		System.out.println(new Date());
-		for (int i = 0; i < 10000; i++) {
-			//jedis.hget("1256785_currentProfile", "101");
-			jedis.hget("87654321_currentProfile", "101");
-		}
-		System.out.println(new Date());
+		//for (int i = 0; i < 10000; i++) {
+			String s=jedis.hget("roomBind:40006", "1011");
+		//}
+		System.out.println(s);
+		
 
+		
 	}
 
 }

@@ -1,4 +1,4 @@
-package spout;
+package cooxm.spout;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -9,7 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import util.PraseXmlUtil;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.Mongo;
+
+import cooxm.devicecontrol.control.Configure;
+import cooxm.util.PraseXmlUtil;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
@@ -30,6 +37,8 @@ public class FileSpout extends BaseRichSpout{
 	List<String> fields=new ArrayList<String>();
 	private PraseXmlUtil xml;
 	private SpoutOutputCollector _collector;
+	
+
 
 	@Override
 	public void open(Map conf, TopologyContext context,
@@ -37,15 +46,17 @@ public class FileSpout extends BaseRichSpout{
 		this._collector=collector;
 		this.xml=new PraseXmlUtil();
 		try {
-			fileReader = new BufferedReader(new FileReader(new File("data1.txt")));
+			fileReader = new BufferedReader(new FileReader(new File("data.txt")));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+		
+
 	}
 
 	@Override
 	public void nextTuple() {
-		Utils.sleep(100);
+		Utils.sleep(5000);
 		String data=null;
 		try {
 			if((data=fileReader.readLine())!=null){	
@@ -65,9 +76,8 @@ public class FileSpout extends BaseRichSpout{
 				if(columns.length!=9){
 					System.err.println("Wrong data:"+data);
 				}
-					
+
 					_collector.emit( new Values( columns)/*,new Values(ctrolID)*/);	
-					//System.out.println(data);
 				//}
 				
 			}
@@ -79,10 +89,13 @@ public class FileSpout extends BaseRichSpout{
 			e.printStackTrace();
 		}
 	}
+	
+
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate"));  //"factorID","timeStamp","ctrolID","roomID","value"
+		declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate"));  
+		//"factorID","timeStamp","ctrolID","roomID","value"
 	}
 
 }

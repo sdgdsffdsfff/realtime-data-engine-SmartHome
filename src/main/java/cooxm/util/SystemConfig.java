@@ -1,13 +1,14 @@
-package util;
+package cooxm.util;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+
 import redis.clients.jedis.Jedis;
-import spout.DataClient;
 import cooxm.devicecontrol.control.Configure;
 import cooxm.devicecontrol.util.MySqlClass;
+import cooxm.spout.DataClient;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
@@ -61,16 +62,6 @@ public class SystemConfig extends Configure {
 		} catch (UnknownHostException e1) {
 			e1.printStackTrace();
 		}
-		if(DataClient.isReachable(localaddress, remoteaddress, device_server_port, 5000)){		
-			try {
-				 socket=new Socket(device_server_IP, device_server_port);
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-		}
 		return socket;
 	}
 
@@ -103,7 +94,7 @@ public class SystemConfig extends Configure {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
-		//MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "root", "cooxm");
+		//MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "cooxm", "cooxm");
 	}
 
 }

@@ -1,4 +1,4 @@
-package trigger;
+package cooxm.trigger;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package trigger;
+package cooxm.trigger;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -12,32 +12,38 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import redis.clients.jedis.Jedis;
-import util.SystemConfig;
 import cooxm.devicecontrol.device.Profile;
 import cooxm.devicecontrol.device.TriggerTemplateFactor;
 import cooxm.devicecontrol.device.TriggerTemplateMap;
 import cooxm.devicecontrol.util.MySqlClass;
+import cooxm.util.SystemConfig;
 
 /** 
  * @author Chen Guanghua E-mail: richard@cooxm.com
  * @version Created：May 6, 2015 10:27:06 AM 
  */
 
-public class RuntimeTriggerTemplateMap extends HashMap<Integer, TriggerTemplateMap> {
+
+/**<ctrolID,TriggerTemplateMap> 用户triggerMap */
+public class RuntimeTriggerTemplateMap extends HashMap<String, TriggerTemplateMap> {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public static Logger log= Logger.getLogger(RuntimeTriggerTemplateMap.class);
 	private static final int boundary= 3000;
 	
 	public RuntimeTriggerTemplateMap(){}
 	
 	public RuntimeTriggerTemplateMap(TriggerTemplateMap triggerMap,/*Jedis jedis,*/MySqlClass mysql){
-		String sql="select ctr_id from info_user_room_st";
+		String sql="select distinct ctr_id,roomid from info_user_room_st";
 		String res = mysql.select(sql);
 		String[] ctrolIDs=res.split("\n");
-		//Set<String> ctrolIDs = jedis.keys("*_currentProfile");
-		//for (String ID:ctrolIDs) {
 		for (int i = 0; i < ctrolIDs.length; i++) {
-			int ctrolID=Integer.parseInt(ctrolIDs[i]);
-			this.put(ctrolID, triggerMap);	
+			String[] cells=ctrolIDs[i].split(",");
+			int ctrolID=Integer.parseInt(cells[0]);
+			int roomID =Integer.parseInt(cells[1]);
+			this.put(ctrolID+"_"+roomID, (TriggerTemplateMap) triggerMap.clone());	
 		}
 	}	
 	
