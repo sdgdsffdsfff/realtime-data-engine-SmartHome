@@ -1,7 +1,9 @@
 package cooxm.trigger;
 
 import java.sql.SQLException;
+import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
 
@@ -38,24 +40,28 @@ public class RuntimeTriggerTemplateReact extends TriggerTemplateReact {
 	}
 	
 	public Message react(MySqlClass mysql,Jedis jedis,int ctrolID,int roomID) throws ParseException {
+		DateFormat sdf=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		jedis.select(9);
 		int onOFF=-1;
 		int mode=-1;
-		int tempreture=25;
-		int speed=-1;
+		int tempreture=26;
+		int speed=0;
+		int windDirection=0;
+		int key=0;
 
 
 		String cookie=this.cookieNo+"_5";
 		//this.cookieNo++;
 		Message msg=null;
 		JSONObject json;
+		int tempID;
 		switch (getReactType()) {
 		case 1:  //通知或告警
 			int targetID=this.getTargetID();
 			if (targetID>=100 && targetID<=2999) {  //家电ID
 				targetID=targetID+1000;  //家电ID加1000 以避免和其他的告警ID冲突  2015-07-16 和谭哥约定
 			}
-			Warn warn=new Warn(ctrolID, 3, 3, 0, new Date(), 2, this.getTargetID(), 2,this.getReactWay());
+			Warn warn=new Warn(ctrolID, 3, 3, 0, new Date(), 2, targetID, 2,this.getReactWay(),"");
 			json=new JSONObject();
 			try {
 				json.put("ctrolID", ctrolID);
@@ -181,7 +187,7 @@ public class RuntimeTriggerTemplateReact extends TriggerTemplateReact {
 			default:
 				break;
 			}
-			DeviceState state= new DeviceState(onOFF, mode, speed, 0, tempreture);
+			DeviceState state= new DeviceState(onOFF, mode, speed, windDirection, tempreture,key,-1);  //-1不会打破空调恒温
 			Set<String> deviceIDSet = jedis.hkeys(LogicControl.roomBind+ctrolID);
 			if(deviceIDSet.size()==0){
 				Log.error("can't find roomBind table in redis,ctrolID="+ctrolID+",DeviceType="+this.getTargetID()+",roomID="+roomID);
@@ -190,7 +196,6 @@ public class RuntimeTriggerTemplateReact extends TriggerTemplateReact {
 			for (String deviceID:deviceIDSet) {
 				Device device=new Device();
 				String s=jedis.hget(LogicControl.roomBind+ctrolID, deviceID);
-				//Log.warn("ctrolID="+ctrolID+",deiceID="+deiceID+"------------------------------------");
 				if(s==null){
 					Log.error("can't find device in redis roomBind table,ctrolID="+ctrolID+",DeviceType="+this.getTargetID()+",roomID="+roomID+",deviceID="+deviceID);
 					return null;
@@ -214,28 +219,63 @@ public class RuntimeTriggerTemplateReact extends TriggerTemplateReact {
 						json.put("receiver",0); 
 						if(device.getDeviceType()==541) { //空调专用接口
 							String airStateStr=jedis.hget(LogicControl.currentDeviceState+ctrolID, deviceID);
-							if(airStateStr!=null && !airStateStr.contains("keyType")){   //keyType 是除了空调意外其他家电用的 状态
-								DeviceState airState=new DeviceState(new JSONObject(airStateStr));
-								if(state.getMode()==1){    //mode=1 制冷； 要求空调制冷，说明还不够冷，减2度
-									state.setTempreature(airState.getTempreature() - 2 );
-									if(state.getTempreature()<16) 
-										state.setTempreature(16);
-								}else if(state.getMode()==4) {  //mode=4 制热 ； 要求空调制热，说明还不够热，加2度
-									state.setTempreature(airState.getTempreature() + 2 );
-									if(state.getTempreature()>30) 
-										state.setTempreature(30);
+							JSONObject airStateJson;
+							DeviceState oldState;
+							if(airStateStr==null){   //初始状态不存在
+								json.put("state", state.toJson());
+							}else{								
+								airStateJson=new JSONObject(airStateStr);
+								//int stable=airStateJson.getInt("stable");
+								int sender;
+								if (airStateJson.has("sender")) {
+									sender=airStateJson.getInt("sender");
+								}else{
+									sender=5;
 								}
-								json.put("state", state.toJson());
-							}else{
-								json.put("state", state.toJson());
+								int OnOff=-1;   //501打开，502关闭
+								if(airStateJson.has("keyType")){
+									OnOff=airStateJson.getInt("keyType");   //501打开，502关闭
+								}else{
+									JSONObject airState=airStateJson.getJSONObject("state");
+									onOFF=(airState.optInt("onOff")==1)?502:501;          //1关闭，0 打开
+								}								
+								if((sender==0 ||sender==1)&& onOFF==502){      //最后一条指令是由中控或者手机发出，并且是关闭的
+									return null;                              //不做任何操作
+								}else{
+									if(airStateStr!=null && airStateStr.contains("state")){   //state 是空调专用的 状态	
+										JSONObject oldStateJson=new JSONObject(airStateStr);
+										oldState=new DeviceState(oldStateJson);
+										//int stable=oldStateJson.getInt("stable");
+										if(state.getMode()==1){    //mode=1 制冷； 要求空调制冷，说明还不够冷，减2度
+											state.setTempreature(oldState.getTempreature() - 1 );
+											if(state.getTempreature()<16) {
+												  state.setTempreature(16);
+											}
+										}else if(state.getMode()==4) {  //mode=4 制热 ； 要求空调制热，说明还不够热，加2度
+											state.setTempreature(oldState.getTempreature() + 1 );
+											if(state.getTempreature()>30){ 
+												state.setTempreature(30);
+											}
+										}
+										state.setStable(oldState.getStable());
+										state.setWindDirection(oldState.getWindDirection());
+										state.setWindSpeed(oldState.getWindSpeed());
+										state.setKeyType(oldState.getKeyType());
+										//oldState.replaceAdd(state);											
+										json.put("state", state.toJson());	
+									}else{
+										json.put("keyType", onOFF);
+									}
+								}								 
 							}
 						}else{
 							json.put("keyType", onOFF);
 						}
+						msg=new Message((short) (LogicControl.SWITCH_DEVICE_STATE), cookie,json );	
 					} catch (JSONException e) {
 						e.printStackTrace();
 					}					
-					msg=new Message((short) (LogicControl.SWITCH_DEVICE_STATE), cookie,json );	
+					
 				}else{
 					continue;
 				}	
@@ -244,14 +284,22 @@ public class RuntimeTriggerTemplateReact extends TriggerTemplateReact {
 			break;
 		case 3:  //profile
 			Profile p;
+
+			if(getTargetID()>10000){
+				tempID=getTargetID()%10000;
+			}else{
+				tempID=getTargetID();
+			}
 			try {
-				p = Profile.getFromDBByTemplateID(mysql, ctrolID, roomID,getTargetID()); // targertID就是情景模板ID
-				json=new JSONObject();
-				json.put("ctrolID", ctrolID);
-				json.put("sender",5);
-				json.put("receiver",0); 
-				json.put("profileID",p.getProfileID()); 
-				msg=new Message((short) (LogicControl.SWITCH_RROFILE_SET), cookie,json);
+				p = Profile.getFromDBByTemplateID(mysql, ctrolID, roomID,tempID); // targertID就是情景模板ID
+				if(p!=null){
+					json=new JSONObject();
+					json.put("ctrolID", ctrolID);
+					json.put("sender",5);
+					json.put("receiver",0); 
+					json.put("profileID",p.getProfileID()); 
+					msg=new Message((short) (LogicControl.SWITCH_RROFILE_SET), cookie,json);
+				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} catch (JSONException e) {   
@@ -260,14 +308,21 @@ public class RuntimeTriggerTemplateReact extends TriggerTemplateReact {
 			break;
 		case 4:  //profileSet
 			ProfileSet ps;
-			try {
-				ps = ProfileSet.getProfileSetByTemplateID(mysql, ctrolID, getTargetID()); // targertID就是情景模板ID
-				json=new JSONObject();
-				json.put("ctrolID", ctrolID);
-				json.put("sender",5);
-				json.put("receiver",0); 
-				json.put("profileSetID",ps.getProfileSetID()); 
-				msg=new Message((short) (LogicControl.SWITCH_RROFILE_SET), cookie,json);
+			if(getTargetID()>10000){
+				tempID=getTargetID()%10000;
+			}else{
+				tempID=getTargetID();
+			}
+			try {				
+				ps = ProfileSet.getProfileSetByTemplateID(mysql, ctrolID, tempID); // targertID就是情景模板ID
+				if(ps!=null){
+					json=new JSONObject();
+					json.put("ctrolID", ctrolID);
+					json.put("sender",5);
+					json.put("receiver",0); 
+					json.put("profileSetID",ps.getProfileSetID()); 
+					msg=new Message((short) (LogicControl.SWITCH_RROFILE_SET), cookie,json);
+				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} catch (JSONException e) {   

@@ -60,9 +60,11 @@ public class FileSpout extends BaseRichSpout{
 		String data=null;
 		try {
 			if((data=fileReader.readLine())!=null){	
-				String[] columns=data.split(",");	
-				/*String[] values=new String[columns.length];
+				System.out.println(data);
+				String[] columns=data.split(",");
+				int factorID=Integer.parseInt(columns[0]);
 				this.fields=xml.getColumnNames(Integer.parseInt(columns[0]));
+				/*String[] values=new String[columns.length];
 				if(this.fields!=null){
 					values[0]=columns[this.fields.indexOf("factorID")];
 					values[1]=columns[this.fields.indexOf("timeStamp")];
@@ -73,12 +75,50 @@ public class FileSpout extends BaseRichSpout{
 					values[6]=columns[this.fields.indexOf("wallID")];
 					values[7]=columns[this.fields.indexOf("value")];					
 					values[8]=columns[this.fields.indexOf("rate")];*/
-				if(columns.length!=9){
-					System.err.println("Wrong data:"+data);
+				if(columns.length!=this.fields.size()){					
+					System.err.println("Wrong data:"+data+",wrong number of fields.column mismatch ");
+					return;
 				}
+				switch (Integer.parseInt(columns[0])) {   //factorID
+				case 2501: //光
+					//columns[7]=columns[7];
+					break;
+				case 2502: //PM2.5
+					columns[7]=Integer.parseInt(columns[7])/100.0+"";
+					break;
+				case 2503: //人体探测器
+					//columns[7]=columns[7];
+					break;
+				case 2504:  //湿度
+					columns[7]=Integer.parseInt(columns[7])/100.0+"";
+					break;
+				case 2505:  //温度
+					columns[7]=Integer.parseInt(columns[7])/100.0+"";
+					break;
+				case 2506:  //噪音
+					columns[7]=Integer.parseInt(columns[7])/100.0+"";
+					break;
+				case 2507:  // 空气质量-6合1
+					//columns[7]=Integer.parseInt(columns[7])/100.0+"";
+					break; 
+				case 201:  //烟雾探测器-一氧化碳
+					//columns[7]=columns[7];
+					break;
+				case 211:  //漏水探测器
+					//columns[7]=columns[7];
+					break;			
+				default:
+					break;
+				}
+				if(factorID==541){  //空调
+					columns[8]=columns[8]+","+columns[9]+","+columns[10]+","+columns[11]+","+columns[12]+","+columns[13]+","+columns[14]+","+columns[15];	
+					return;
+				}
+				String[]  columnss={columns[0],columns[1],columns[2],columns[3],columns[4],columns[5],columns[6],columns[7],columns[8]};
+				
+				_collector.emit( new Values( columnss)/*,new Values(ctrolID)*/);	
+				
 
-					_collector.emit( new Values( columns)/*,new Values(ctrolID)*/);	
-				//}
 				
 			}
 		} catch (FileNotFoundException e) {
@@ -94,8 +134,13 @@ public class FileSpout extends BaseRichSpout{
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate"));  
-		//"factorID","timeStamp","ctrolID","roomID","value"
+
+			//declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate","count","onOff","mode","speed","direction","temperature","key"));  
+
+			declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate"));  
+
+		
+		//declarer.declare(new Fields(this.fields));
 	}
 
 }

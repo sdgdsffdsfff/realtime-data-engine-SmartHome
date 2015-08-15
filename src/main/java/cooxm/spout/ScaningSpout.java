@@ -21,6 +21,7 @@ import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichSpout;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
@@ -29,7 +30,7 @@ import backtype.storm.utils.Utils;
  * @version Created：Apr 21, 2015 10:45:42 AM 
  */
 
-public class RedisSpout extends BaseRichSpout {
+public class ScaningSpout extends BaseRichSpout {
 
 	static Logger log =Logger.getLogger(SocketSpout.class);
 	private SpoutOutputCollector _collector;
@@ -43,17 +44,39 @@ public class RedisSpout extends BaseRichSpout {
 		this._collector=collector;
 		this.xml=new PraseXmlUtil();
 		
-		rt=new RedisThread();
-		new Thread(rt).start();
+		EverydayTask.updateWeather();
+		EverydayTask.findFaultSensor();
+		
+		//rt=new RedisThread();
+		//new Thread(rt).start();
 	}
 
 	@Override
 	public void nextTuple() {
+		String data=null;
+
+		try {			
+			if((data=EverydayTask.dataQueue.poll(100, TimeUnit.MILLISECONDS))!=null){	
+				String[] columns=data.split(",");
+				String token=columns[0];				
+				this.fields=xml.getColumnNames(Integer.parseInt(token));
+				if (fields!=null && columns.length == fields.size()){
+					_collector.emit(new Values((Object[])columns ));
+				}
+			}
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		
 
 	}
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+		declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate"));
 	}
 
 

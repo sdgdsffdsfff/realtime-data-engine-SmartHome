@@ -32,11 +32,11 @@ import cooxm.util.SystemConfig;
  * 这个Bolt匹配方法是 ：云端认为规则对每个用户都式样的。
  */
 public class MatchingBolt2  implements IRichBolt {
-	static Logger log= Logger.getLogger(ConnectThread.class);
+	static Logger log= Logger.getLogger(MatchingBolt2.class);
 	
 	OutputCollector _collector;
-	public  static TriggerTemplateMap triggerMap=null;
-	public  RuntimeTriggerTemplateMap runTriggerMap=null;
+	public  static TriggerTemplateMap triggerMap=null;  //模板
+	public  static RuntimeTriggerTemplateMap runTriggerMap=null; //运行时模板
 	Jedis jedis;
 
 	
@@ -49,14 +49,12 @@ public class MatchingBolt2  implements IRichBolt {
 		this._collector=collector;
 		SystemConfig config= SystemConfig.getConf();
 		MySqlClass mysql=config.getMysql();
-		TriggerTemplateMap triggerTempMap=new TriggerTemplateMap(mysql);
-		this.runTriggerMap=new RuntimeTriggerTemplateMap(triggerTempMap,mysql);
-		triggerMap = new TriggerTemplateMap(config.getMysql());
+		//TriggerTemplateMap triggerTempMap=new TriggerTemplateMap(mysql);
+		triggerMap = new TriggerTemplateMap(mysql);
+		this.runTriggerMap=new RuntimeTriggerTemplateMap(triggerMap,mysql);	
 		
 		this.jedis=config.getJedis();
 		this.jedis.select(9);
-
-
 	}
 
 	@Override
@@ -71,15 +69,15 @@ public class MatchingBolt2  implements IRichBolt {
 		int factorID=Integer.parseInt((String) line.get(fields.indexOf("factorID")));
 		int ctrolID=Integer.parseInt((String) line.get(fields.indexOf("ctrolID")));
 		int roomID=Integer.parseInt( (String) line.get(fields.indexOf("roomID")));
-		TriggerTemplateMap triggertemp=this.runTriggerMap.get(ctrolID+"_"+roomID);
+		TriggerTemplateMap triggertemp=(TriggerTemplateMap) this.runTriggerMap.get(ctrolID+"_"+roomID);
 		if(triggertemp==null){
 			this.runTriggerMap.put(ctrolID+"_"+roomID, (TriggerTemplateMap) this.triggerMap.clone());
-			triggertemp=triggerMap;
+			triggertemp=(TriggerTemplateMap) triggerMap.clone();
 		}
 		for (Entry<Integer, TriggerTemplate>  entry:triggertemp.entrySet()) {	
 			RunTimeTriggerTemplate runTrigger=null;//=new RunTimeTriggerTemplate(entry.getValue(),new Date(0),0, SystemConfig.getConf().getTriggerTimeOut());
 			String className=entry.getValue().getClass().getName();
-			if (className.equals("trigger.RunTimeTriggerTemplate")) {
+			if (className.equals("cooxm.trigger.RunTimeTriggerTemplate")) {
 				 runTrigger=(RunTimeTriggerTemplate) entry.getValue();
 			}else {
 				runTrigger=new RunTimeTriggerTemplate(entry.getValue(),new Date(0),0, SystemConfig.getConf().getTriggerTimeOut());
@@ -93,8 +91,11 @@ public class MatchingBolt2  implements IRichBolt {
 				+matchedTriggerID+",name:"+runTrigger.getTriggerName());
 				
 				triggertemp.replace(runTrigger.getTriggerTemplateID(), runTrigger);
-				this.runTriggerMap.put(ctrolID+"_"+roomID, triggertemp);	
-				
+				this.runTriggerMap.put(ctrolID+"_"+roomID, triggertemp);				
+			}
+			if(runTrigger.getTriggerTemplateID()==120){
+				triggertemp.replace(runTrigger.getTriggerTemplateID(), runTrigger);
+				this.runTriggerMap.put(ctrolID+"_"+roomID, triggertemp);
 			}
 		}			
 	}

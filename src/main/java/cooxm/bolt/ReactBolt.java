@@ -34,10 +34,11 @@ public class ReactBolt implements IRichBolt{
 	static Logger log =Logger.getLogger(ReactBolt.class);
 	private Jedis jedis;
 	MySqlClass mysql;
-	private static SocketClient deviceControlServer=null;
+	public static SocketClient deviceControlServer=null;
 	String IP;
 	int port;
 	int clusterID;
+	int targetServerID;
 	int serverID;
 	int serverType;
 	
@@ -55,30 +56,18 @@ public class ReactBolt implements IRichBolt{
 		this.port =Integer.parseInt(config.getProperty("device_server_port","20190"));
 		this.clusterID=Integer.parseInt(config.getValue("cluster_id"));
 		this.serverID=Integer.parseInt(config.getValue("server_id"));
-		this.serverType=200;	
+		this.serverType=Integer.parseInt(config.getValue("server_type"));
+		this.targetServerID=4;
          
 		
-		deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType ,false);
+		deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.targetServerID,this.serverID,this.serverType ,true,false);
 		Thread controlServerThread = new Thread( this.deviceControlServer);
 		controlServerThread.setName("controlServerThread");
 		controlServerThread.start();
-		//log.info("Successfull connect to msg Server: "+this.IP+":"+this.port);
-		//deviceControlServer.sendAuth(1,5,200);	
-//		Message msg=CtrolSocketServer.readFromClient(deviceControlServer.sock);
-//		System.out.println(msg.toString());
-//		if(msg!=null && msg.getJson()!=null && msg.getJson().optInt("errorCode")==0){
-//			log.warn("\n#------------    Success connect to "+this.IP+":" +this.port +"         -------------------#\n");
-//		}else{
-//			log.warn("\n#------------    Failed to connect  "+this.IP+":" +this.port +"         -------------------#\n");
-//		}
 	}
 
 	@Override
 	public void execute(Tuple input) {
-		if(deviceControlServer==null){
-			deviceControlServer= new SocketClient(this.IP,this.port,this.clusterID,this.serverID,this.serverType,false );
-			deviceControlServer.sendAuth(this.clusterID,this.serverID,this.serverType);	
-		}
 
 		List<Object> line=input.getValues();
 		int ctrolID=(Integer)line.get(0);
@@ -105,11 +94,23 @@ public class ReactBolt implements IRichBolt{
 			if(msg!=null && deviceControlServer.sock!=null){
 				log.info("command has been send,ctrolID="+ctrolID+",TriggerID="+triggerid
 						+",triggerName="+tg.getTriggerName()+",commandID="+Integer.toHexString(msg.getCommandID())+",msg:"+msg.toString());
-				msg.writeBytesToSock2(deviceControlServer.sock);
-			}
-			
+				try {
+					msg.writeBytesToSock2(deviceControlServer.sock);
+				} catch (Exception e) {
+					e.printStackTrace();
+					try {
+						log.info("socket has been closed:"+deviceControlServer.sock.getRemoteSocketAddress());
+						deviceControlServer.sock.getOutputStream().close();
+						deviceControlServer.sock.close();
+						deviceControlServer.sock=null;
+						
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+				}
+			}			
 		}
-		System.out.println("\n");
+		//System.out.println("\n");
 		this._collector.emit(new Values("react"));
 	}
 
@@ -128,7 +129,7 @@ public class ReactBolt implements IRichBolt{
 	
 	
 	public static void main(String[] args) throws UnknownHostException, IOException {
-		SocketClient sock=new SocketClient("172.16.35.173",20190,1,5,200,false);
+		SocketClient sock=new SocketClient("172.16.35.173",20190,1,4,5,200,false,true);
 		//sock.sendAuth(1,5,200);
 		new Thread((Runnable) sock).start();
 		Message a=CtrolSocketServer.readFromClient(sock.sock);

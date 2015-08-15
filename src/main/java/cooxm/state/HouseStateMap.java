@@ -1,11 +1,16 @@
 package cooxm.state;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.function.Consumer;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import redis.clients.jedis.Jedis;
 import cooxm.devicecontrol.control.Configure;
@@ -32,11 +37,11 @@ public class HouseStateMap {
 	/** ctrolID, houseState */
 	public  Map<Integer, HouseState> stateMap ;//= new HashMap<Integer, HouseState>();
 	
-	/** Map<ctrolID,Map<roomID, Map<factorID,String> >> */
+	/** Map<ctrolID,Map<roomID, JsonString> >> */
 	public Map<Integer, HashMap<Integer,  String>> avgStateMap;// = new HashMap<Integer, HashMap<Integer, Double>>();
 	
-	
-	//public  Map<Integer,HashMap<Integer,  Double>> avgStateMap;  //旧的,不区分room的 房屋状态 
+	/**     Map<ctrolID,HashMap<roomID, HashMap<factorID,  avg>> > */
+	//public  Map<Integer,HashMap<Integer,HashMap<Integer,  Double>>> roomFactorAvgMap;  
 	
 	
 	public Map<Integer, HouseState> getStateMap() {
@@ -142,28 +147,6 @@ public class HouseStateMap {
 			case 211:  //漏水探测器
 				avgArray[8]=entry.getValue();
 				break;
-			//------------------- 2015-04-11 之前 factorDict旧的 定义	
-			case 2011:  //光
-				avgArray[0]=entry.getValue();
-				break;
-			case 301:  //PM2.5
-				avgArray[1]=entry.getValue();
-				break;
-			case 401:  //有害气体-空气质量
-				avgArray[6]=entry.getValue();
-				break;
-			case 501:   //湿度
-				avgArray[3]=entry.getValue();
-				break;
-			case 601:   //温度
-				avgArray[4]=entry.getValue();
-				break;
-			case 801:  // 人体探测
-				avgArray[2]=entry.getValue();
-				break;
-			case 901:   // 噪音
-				avgArray[5]=entry.getValue();
-				break;
 				
 			default:
 				break;
@@ -184,22 +167,24 @@ public class HouseStateMap {
 		String averageHouseStateString=null;
 		for (Map.Entry<Integer, HouseState> entry1 : stateMap.entrySet()) {
 			HashMap<Integer, String> roomAvgMap= new HashMap<Integer, String>();  //HashMap<roomID, StateString>
-			for (HashMap.Entry<Integer, HashMap<Integer, ArrayBlockingQueue<Integer>>> entry2 : entry1.getValue().entrySet()) {
+			for (HashMap.Entry<Integer, HashMap<Integer, ArrayBlockingQueue<Double>>> entry2 : entry1.getValue().entrySet()) {
 				HashMap<Integer, Double> factorAvgMap=null;
 				factorAvgMap=new HashMap<Integer, Double> ();
-				for (Map.Entry<Integer, ArrayBlockingQueue<Integer>> entry3 : entry2.getValue().entrySet()){
+				for (Map.Entry<Integer, ArrayBlockingQueue<Double>> entry3 : entry2.getValue().entrySet()){
 					int sum=0;
 					int count=entry3.getValue().size();
 					double factorAvg=-1;
+					Object[] x=entry3.getValue().toArray();
 					for (int i = 0; i < count; i++) {
-						sum+=entry3.getValue().peek();	
+						sum+=(Double)x[i];	
 					}
 				    factorAvg=sum*1.0/(count);
 					if(entry2.getKey()==2503){
 						factorAvg=entry3.getValue().peek();
 					}
-
-					factorAvgMap.put(entry3.getKey(), factorAvg);
+					BigDecimal   b   =   new   BigDecimal(factorAvg);
+					BigDecimal c = b.setScale(2,  BigDecimal.ROUND_HALF_UP);
+					factorAvgMap.put(entry3.getKey(), c.doubleValue());
 				}	
 				// 2015-06-01 UK 要求改为json格式
 				//averageHouseStateString=getAverageHouseStateString(factorAvgMap);
@@ -213,6 +198,42 @@ public class HouseStateMap {
 			avgStateMap.put(entry1.getKey(), roomAvgMap);	
 		}
 		return ;
+	}
+	
+	public double getRoomFactorAvg(int ctrolID,int roomID,int factorID) throws JSONException{
+		HashMap<Integer, String> roomAvgMap = this.avgStateMap.get(ctrolID);
+		if(roomAvgMap!=null){
+			String averageHouseStateString=roomAvgMap.get(roomID);
+			if(averageHouseStateString!=null){
+				JSONObject json=new JSONObject(averageHouseStateString);
+				double value=-65535;
+				switch (factorID) {
+				//2015-05-04 richard 重新定义
+				case 2501: //光
+					value=json.getJSONObject("lux").getDouble("value");
+					break;
+				case 2502: //PM2.5
+					value=json.getJSONObject("pm25").getDouble("value");;
+					break;
+				case 2504:  //湿度
+					value=json.getJSONObject("moisture").getDouble("value");;
+					break;
+				case 2505:  //温度
+					value=json.getJSONObject("temperature").getDouble("value");;
+					break;
+				case 2506:  //噪音 
+					value=json.getJSONObject("noise").getDouble("value");;
+					break;
+				case 2507:  // 空气质量-6合1
+					value=json.getJSONObject("harmfulGas").getDouble("value");;
+					break; 
+				default:
+					break; 
+			   }
+			   return value;				
+			}
+		}
+		return -65535;
 	}
 	
 	public String getAverageHouseStateString(HashMap<Integer, Double> roomAvgMap){
@@ -259,30 +280,7 @@ public class HouseStateMap {
 				break;
 			case 211:  //漏水探测器
 				avgArray[8]=entry.getValue();
-				break;
-			//------------------- 2015-04-11 之前 factorDict旧的 定义	
-			case 2011:  //光
-				avgArray[0]=entry.getValue();
-				break;
-			case 301:  //PM2.5
-				avgArray[1]=entry.getValue();
-				break;
-			case 401:  //有害气体-空气质量
-				avgArray[6]=entry.getValue();
-				break;
-			case 501:   //湿度
-				avgArray[3]=entry.getValue();
-				break;
-			case 601:   //温度
-				avgArray[4]=entry.getValue();
-				break;
-			case 801:  // 人体探测
-				avgArray[2]=entry.getValue();
-				break;
-			case 901:   // 噪音
-				avgArray[5]=entry.getValue();
-				break;
-				
+				break;			
 			default:
 				break;
 			}			
@@ -317,12 +315,12 @@ public class HouseStateMap {
 			//2015-05-04 richard 重新定义
 			case 2501: //光
 				level =levelMap.getLevel((int)entry.getKey(), value);
-                state=new State(entry.getValue(),level);
+                state=new State(value,level);
 				es.setLux(state);
 				break;
 			case 2502: //PM2.5
-				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
-                state=new State(value/100.0,level);
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(value,level);
 				es.setPm25(state);
 				break;
 //			case 2503: //人体探测器
@@ -330,23 +328,25 @@ public class HouseStateMap {
 //				avgArray[2]=entry.getValue();
 //				break;
 			case 2504:  //湿度
-				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
-                state=new State(value/100.0,level);              	
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(value,level);              	
                 es.setMoisture(state);
 				break;
 			case 2505:  //温度
-				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
-                state=new State(value/100.0,level);
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(value,level);
 				es.setTemprature(state);
 				break;
 			case 2506:  //噪音 
 				level =levelMap.getLevel((int)entry.getKey(), value);
-                state=new State(entry.getValue(),level);
+                state=new State(value,level);
 				es.setNoise(state);
 				break;
 			case 2507:  // 空气质量-6合1
 				level =levelMap.getLevel((int)entry.getKey(), value);
-                state=new State(value/100.0,level);
+				BigDecimal   b   =   new   BigDecimal(value/100.0);
+				BigDecimal c = b.setScale(2,  BigDecimal.ROUND_HALF_UP);
+                state=new State(c.doubleValue(),level);
 				es.setHarmfulGas(state);
 				break; 
 //			case 201:  //烟雾探测器-一氧化碳
@@ -359,6 +359,43 @@ public class HouseStateMap {
 				//es=null;
 				break; 
 		   }
+			//  2015-08-01 已经在spout除以100 这里不再处理
+			/*switch (entry.getKey()) {
+			//2015-05-04 richard 重新定义
+			case 2501: //光
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(value,level);
+				es.setLux(state);
+				break;
+			case 2502: //PM2.5
+				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
+                state=new State(value/100.0,level);
+				es.setPm25(state);
+				break;
+			case 2504:  //湿度
+				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
+                state=new State(value/100.0,level);              	
+                es.setMoisture(state);
+				break;
+			case 2505:  //温度
+				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
+                state=new State(value/100.0,level);
+				es.setTemprature(state);
+				break;
+			case 2506:  //噪音 
+				level =levelMap.getLevel((int)entry.getKey(), value/100.0);
+                state=new State(value/100.0,level);
+				es.setNoise(state);
+				break;
+			case 2507:  // 空气质量-6合1
+				level =levelMap.getLevel((int)entry.getKey(), value);
+                state=new State(value/100.0,level);
+				es.setHarmfulGas(state);
+				break; 
+			default:
+				//es=null;
+				break; 
+		   }*/
 	   }
        return es;
        
@@ -372,7 +409,7 @@ public class HouseStateMap {
 		Configure cf=new Configure();
 		String redis_ip         =cf.getValue("redis_ip");
 		int redis_port       	=Integer.parseInt(cf.getValue("redis_port"));
-		Jedis jedis=new Jedis(redis_ip, redis_port,500);
+		Jedis jedis=new Jedis(redis_ip, redis_port,10000);
 		jedis.select(9);
 		
 		MySqlClass mysql=new MySqlClass("172.16.35.170","3306","cooxm_device_control", "cooxm", "cooxm");

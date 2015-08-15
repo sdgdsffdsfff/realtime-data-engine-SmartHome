@@ -36,14 +36,14 @@ public class RuntimeTriggerTemplateMap extends HashMap<String, TriggerTemplateMa
 	public RuntimeTriggerTemplateMap(){}
 	
 	public RuntimeTriggerTemplateMap(TriggerTemplateMap triggerMap,/*Jedis jedis,*/MySqlClass mysql){
-		String sql="select distinct ctr_id,roomid from info_user_room_st";
+		String sql="select distinct ctr_id,roomid from info_user_room";
 		String res = mysql.select(sql);
 		String[] ctrolIDs=res.split("\n");
 		for (int i = 0; i < ctrolIDs.length; i++) {
 			String[] cells=ctrolIDs[i].split(",");
 			int ctrolID=Integer.parseInt(cells[0]);
 			int roomID =Integer.parseInt(cells[1]);
-			this.put(ctrolID+"_"+roomID, (TriggerTemplateMap) triggerMap.clone());	
+			this.put(ctrolID+"_"+roomID, triggerMap );//(TriggerTemplateMap) triggerMap.clone());	
 		}
 	}	
 	

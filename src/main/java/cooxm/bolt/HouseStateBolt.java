@@ -5,20 +5,26 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.log4j.Logger;
+import org.json.JSONException;
 
 import cooxm.devicecontrol.control.Configure;
 import cooxm.state.HouseState;
 import cooxm.state.HouseStateMap;
+import cooxm.state.TimerThread;
+import cooxm.util.RedisUtil;
 import redis.clients.jedis.Jedis;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
@@ -32,7 +38,8 @@ public class HouseStateBolt implements IRichBolt {
 	static Logger log =Logger.getLogger(HouseStateBolt.class);
 	Jedis jedis=null;
 	OutputCollector _collector;
-	static HouseStateMap houseStateMap;//=new HouseStateMap();
+	
+	public static HouseStateMap houseStateMap;
 	private static final int FACTOR_VALUE_LIST_SIZE=10;
 
 
@@ -43,7 +50,7 @@ public class HouseStateBolt implements IRichBolt {
 		Configure cf=new Configure();
 		String redis_ip         =cf.getValue("redis_ip");
 		int redis_port       	=Integer.parseInt(cf.getValue("redis_port"));
-		this.jedis=new Jedis(redis_ip, redis_port,200);	
+		this.jedis=RedisUtil.getJedis();//new Jedis(redis_ip, redis_port,10000);	
 		jedis.select(9);
 		this.houseStateMap=new HouseStateMap();		
 		Thread timerThread=new Thread(new TimerThread(jedis));
@@ -63,26 +70,61 @@ public class HouseStateBolt implements IRichBolt {
 		int factorID=Integer.parseInt((String) line.get(fields.indexOf("factorID")));	
 		int deviceID=Integer.parseInt((String) line.get(fields.indexOf("deviceID")));	
 		int roomID  =Integer.parseInt((String) line.get(fields.indexOf("roomID")));
-		int value=Integer.parseInt((String) line.get(fields.indexOf("value")));
-		long date = Long.parseLong( (String)line.get(fields.indexOf("timeStamp")))/1000;
+		Double value=Double.parseDouble((String) line.get(fields.indexOf("value")));
 		
-		jedis.hset("sensorData:"+ctrolID, deviceID+"", date+"");
 		
+		double deltaValue=0.0;
+		List<Object> em = null;
+		if(factorID==2501 ||factorID==2506 /*||factorID==2502 ||factorID==2504 ||factorID==2505  ||factorID==2507*/ ){
+			try {
+				double avgValue=houseStateMap.getRoomFactorAvg(ctrolID, roomID, factorID);
+				if(avgValue!=-65535){
+					deltaValue=value-avgValue;
+					 em= input.getValues();
+					 em.set(0, factorID+100+"");
+					 em.set(7, deltaValue);
+					 this._collector.emit(em);
+					 //for (Object st:em) {System.out.print(st+",");}System.out.print("\n");
+				}
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+	
 		
 		HouseState houseState = houseStateMap.stateMap.get(ctrolID);
 		if(houseState==null){
 			houseState=new HouseState();
 			houseState.setCtrolID(ctrolID);
 		}
-		HashMap<Integer, ArrayBlockingQueue<Integer>> factorStateMap= houseState.get(roomID);
-		ArrayBlockingQueue<Integer> valueList;
+		ArrayBlockingQueue<Double> valueList;
+		if(factorID==2502){
+			//对每个房间都添加 PM25数据
+			for (Entry<Integer, HashMap<Integer, ArrayBlockingQueue<Double>>> entry1 :houseState.entrySet()) {  //<roomID,<factorID,ArrayBlockingQueue<Double>>>
+				if (entry1.getValue().containsKey(2502)) {
+					valueList=entry1.getValue().get(2502);					
+				}else{
+					valueList=new ArrayBlockingQueue<Double>(FACTOR_VALUE_LIST_SIZE);
+				}
+				if(valueList.size() >= FACTOR_VALUE_LIST_SIZE){ 
+					valueList.poll();  
+		        }
+				valueList.add(value);
+				entry1.getValue().put(2502, valueList);	
+				houseState.put(entry1.getKey(), entry1.getValue());  //<roomID,factorMap>
+			}
+			houseStateMap.stateMap.put(ctrolID, houseState);
+			return;
+		}
+		HashMap<Integer, ArrayBlockingQueue<Double>> factorStateMap= houseState.get(roomID);
+
 		if(factorStateMap==null){
-			factorStateMap=new HashMap<Integer, ArrayBlockingQueue<Integer>>();
-			valueList=new ArrayBlockingQueue<Integer>(FACTOR_VALUE_LIST_SIZE);
+			factorStateMap=new HashMap<Integer, ArrayBlockingQueue<Double>>();
+			valueList=new ArrayBlockingQueue<Double>(FACTOR_VALUE_LIST_SIZE);
 		}else {
 			valueList=factorStateMap.get(factorID);
 			if(valueList==null){
-				valueList=new ArrayBlockingQueue<Integer>(FACTOR_VALUE_LIST_SIZE);
+				valueList=new ArrayBlockingQueue<Double>(FACTOR_VALUE_LIST_SIZE);
 			}
 		}
 		if(valueList.size() >= FACTOR_VALUE_LIST_SIZE){ 
@@ -94,8 +136,8 @@ public class HouseStateBolt implements IRichBolt {
 		houseStateMap.stateMap.put(ctrolID, houseState);
 		
 		//剩下的工作由TimerThread完成：timerThread定时将houseState保存到redis
+
 		
-		this._collector.emit(new Values("houseState"));
 
 	}
 
@@ -105,6 +147,7 @@ public class HouseStateBolt implements IRichBolt {
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
+		declarer.declare(new Fields("factorID","timeStamp","ctrolID","deviceID","roomType","roomID","wallID","value","rate"));
 	}
 
 	@Override

@@ -11,7 +11,7 @@ import java.util.concurrent.ArrayBlockingQueue;
  * 存储各个家中传感器、家电状态
  * map< factorID, <roomID,List<value> > >
  */
-public class HouseState extends HashMap<Integer, HashMap<Integer, ArrayBlockingQueue<Integer>>>  {
+public class HouseState extends HashMap<Integer, HashMap<Integer, ArrayBlockingQueue<Double>>>  {
 	int ctrolID;
 	
 	/** map< factorID, <deviceID,value>> */
@@ -29,7 +29,7 @@ public class HouseState extends HashMap<Integer, HashMap<Integer, ArrayBlockingQ
 	
 
 	public HouseState(int ctrolID,
-			Map<Integer, HashMap<Integer, ArrayBlockingQueue<Integer>>> factorStateMap) {
+			Map<Integer, HashMap<Integer, ArrayBlockingQueue<Double>>> factorStateMap) {
 		super(factorStateMap);
 		this.ctrolID = ctrolID;
 	}	

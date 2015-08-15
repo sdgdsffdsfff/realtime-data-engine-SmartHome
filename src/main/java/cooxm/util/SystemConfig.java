@@ -76,7 +76,8 @@ public class SystemConfig extends Configure {
 	public Jedis getJedis(){
 		String redis_ip         =conf.getValue("redis_ip");
 		int redis_port       	=Integer.parseInt(conf.getValue("redis_port"));	
-		Jedis jedis=new  Jedis(redis_ip, redis_port,8000);
+		Jedis jedis=new  Jedis(redis_ip, redis_port,10000);
+		jedis.select(9);
 		//jedis.configSet("timeout", "4000");
 		return jedis;
 	}
